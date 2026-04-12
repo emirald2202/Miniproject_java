@@ -11,6 +11,8 @@ import store.*;
 import threads.*;
 import users.*;
 
+import javafx.application.Application;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Scanner;
@@ -156,9 +158,9 @@ public class Main {
                + store.noiseBox.size()) + " complaints.");
     }
 
-    // Placeholder — JavaFX launch will be wired here in Step 8
+    // Launches the JavaFX GUI — Application.launch() hands control to MainApp.start()
     private static void runFullApplication() {
-        System.out.println("[GUI] JavaFX GUI not yet implemented. Run option [2] to test the backend.");
+        Application.launch(gui.MainApp.class);
     }
 
     // Comprehensive terminal test — verifies all backend components before any GUI is added
