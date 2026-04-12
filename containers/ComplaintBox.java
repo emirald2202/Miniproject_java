@@ -8,9 +8,13 @@ package containers;
 import complaints.BaseComplaint;
 import exceptions.DuplicateComplaintException;
 import exceptions.ComplaintNotFoundException;
+import exceptions.ComplaintExpiredException;
+import enums.Status;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Comparator;
 import java.time.Duration;
+import java.time.LocalDateTime;
 
 public class ComplaintBox<T extends BaseComplaint> {
     private List<T> complaints;
@@ -64,6 +68,29 @@ public class ComplaintBox<T extends BaseComplaint> {
     // Returns all complaints in the box
     public List<T> getAllComplaints() {
         return complaints;
+    }
+
+    // Removes a complaint by ID; blocks removal if complaint is resolved and older than 30 days
+    public void remove(int complaintId) throws ComplaintNotFoundException, ComplaintExpiredException {
+        T found = getComplaintById(complaintId);
+
+        boolean isResolved = found.status == Status.RESOLVED;
+        boolean olderThan30Days = Duration.between(found.filedDate, LocalDateTime.now()).toDays() > 30;
+
+        if (isResolved && olderThan30Days) {
+            throw new ComplaintExpiredException(
+                "Complaint #" + complaintId + " is archived and cannot be modified.");
+        }
+
+        complaints.remove(found);
+        System.out.println("Complaint #" + complaintId + " removed successfully.");
+    }
+
+    // Returns all complaints sorted by priority score descending (highest priority first)
+    public List<T> getByPriority() {
+        List<T> sorted = new ArrayList<>(complaints);
+        sorted.sort(Comparator.comparingInt((T c) -> c.priorityScore).reversed());
+        return sorted;
     }
 
     // Returns the number of complaints in the box
