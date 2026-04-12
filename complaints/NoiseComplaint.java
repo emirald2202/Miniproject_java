@@ -9,12 +9,12 @@ import java.time.LocalDateTime;
 public class NoiseComplaint extends BaseComplaint {
 
     public NoiseComplaint(int complaintId, String title, String description, 
-                          int filedByUserId, int areaCode, int urgencyLevel, LocalDateTime filedDate) {
-        super(complaintId, title, description, filedByUserId, areaCode, urgencyLevel, filedDate);
+                          int filedByUserId, int areaCode, int urgencyLevel, LocalDateTime filedDate, String targetAgainst) {
+        super(complaintId, title, description, filedByUserId, areaCode, urgencyLevel, filedDate, targetAgainst);
     }
 
     @Override
     public int calculatePriorityScore() {
-        return this.urgencyLevel * 1;
+        return 1100;
     }
 }

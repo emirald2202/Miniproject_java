@@ -16,12 +16,13 @@ public abstract class BaseComplaint {
     public int areaCode;
     public int urgencyLevel;
     public LocalDateTime filedDate;
+    public String targetAgainst; 
     
     public int assignedToOfficerId;
     public int priorityScore;
 
     public BaseComplaint(int complaintId, String title, String description, 
-                         int filedByUserId, int areaCode, int urgencyLevel, LocalDateTime filedDate) {
+                         int filedByUserId, int areaCode, int urgencyLevel, LocalDateTime filedDate, String targetAgainst) {
         this.complaintId = complaintId;
         this.title = title;
         this.description = description;
@@ -29,6 +30,7 @@ public abstract class BaseComplaint {
         this.areaCode = areaCode;
         this.urgencyLevel = urgencyLevel;
         this.filedDate = filedDate;
+        this.targetAgainst = targetAgainst;
         this.status = Status.FILED;
         this.assignedToOfficerId = -1;
         this.priorityScore = 0;
@@ -37,7 +39,10 @@ public abstract class BaseComplaint {
     public abstract int calculatePriorityScore();
 
     // Updates the current status of the complaint
-    public void updateStatus(Status newStatus) {
+    public void updateStatus(Status newStatus) throws exceptions.ComplaintAlreadyResolvedException {
+        if (this.status == Status.RESOLVED) {
+            throw new exceptions.ComplaintAlreadyResolvedException();
+        }
         this.status = newStatus;
     }
 }
