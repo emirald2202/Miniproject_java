@@ -4,21 +4,10 @@
 
 package store;
 
-import users.Citizen;
-import users.Officer;
-import users.Admin;
-import complaints.InfrastructureComplaint;
-import complaints.CorruptionComplaint;
-import complaints.NoiseComplaint;
-import complaints.TrafficComplaint;
-import complaints.SanitationComplaint;
-import complaints.WaterSupplyComplaint;
-import complaints.ElectricityComplaint;
+import users.*;
+import complaints.*;
 import containers.ComplaintBox;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.*;
 
 public class DataStore {
     private static DataStore instance;
