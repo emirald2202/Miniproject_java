@@ -5,6 +5,9 @@
 package complaints;
 
 import enums.Status;
+import exceptions.InvalidStatusTransitionException;
+import exceptions.ComplaintExpiredException;
+import exceptions.OfficerNotAssignedException;
 import java.time.LocalDateTime;
 
 public abstract class BaseComplaint {
@@ -36,8 +39,66 @@ public abstract class BaseComplaint {
 
     public abstract int calculatePriorityScore();
 
-    // Updates the current status of the complaint
-    public void updateStatus(Status newStatus) {
-        this.status = newStatus;
+    // Updates the current status of the complaint with workflow validation
+    public void updateStatus(Status newStatus) 
+            throws InvalidStatusTransitionException, ComplaintExpiredException {
+        
+        try {
+            // Check if the complaint is already resolved or rejected (expired/archived)
+            if (this.status == Status.RESOLVED || this.status == Status.REJECTED) {
+                throw new ComplaintExpiredException(
+                    "Complaint #" + complaintId + " is already " + this.status 
+                    + " and cannot be modified.");
+            }
+
+            // Validate status transition workflow
+            boolean validTransition = false;
+            switch (this.status) {
+                case FILED:
+                    validTransition = (newStatus == Status.UNDER_REVIEW || newStatus == Status.REJECTED);
+                    break;
+                case UNDER_REVIEW:
+                    validTransition = (newStatus == Status.RESOLVED || newStatus == Status.ESCALATED 
+                                       || newStatus == Status.REJECTED);
+                    break;
+                case ESCALATED:
+                    validTransition = (newStatus == Status.UNDER_REVIEW || newStatus == Status.RESOLVED);
+                    break;
+                default:
+                    validTransition = false;
+            }
+
+            if (!validTransition) {
+                throw new InvalidStatusTransitionException(
+                    "Cannot transition complaint #" + complaintId 
+                    + " from " + this.status + " to " + newStatus + ".");
+            }
+
+            this.status = newStatus;
+
+        } catch (ComplaintExpiredException | InvalidStatusTransitionException e) {
+            System.err.println("[STATUS UPDATE ERROR] " + e.getMessage());
+            throw e; // Re-throw so the caller can also handle it
+        }
+    }
+
+    // Assigns an officer to this complaint with validation
+    public void assignOfficer(int officerId, int requestingOfficerId) 
+            throws OfficerNotAssignedException {
+        
+        try {
+            // If already assigned, only the currently assigned officer can reassign
+            if (this.assignedToOfficerId != -1 && this.assignedToOfficerId != requestingOfficerId) {
+                throw new OfficerNotAssignedException(
+                    "Officer #" + requestingOfficerId + " is not assigned to complaint #" 
+                    + complaintId + ". Only officer #" + this.assignedToOfficerId + " can modify it.");
+            }
+
+            this.assignedToOfficerId = officerId;
+
+        } catch (OfficerNotAssignedException e) {
+            System.err.println("[ASSIGNMENT ERROR] " + e.getMessage());
+            throw e;
+        }
     }
 }

@@ -6,6 +6,10 @@ package users;
 
 import enums.Role;
 import profile.CitizenProfile;
+import complaints.BaseComplaint;
+import containers.ComplaintBox;
+import exceptions.DuplicateComplaintException;
+import exceptions.UnauthorizedAccessException;
 
 public class Citizen extends BaseUser {
     private CitizenProfile profile;
@@ -24,4 +28,25 @@ public class Citizen extends BaseUser {
     public CitizenProfile getProfile() {
         return this.profile;
     }
+
+    // Files a complaint into the given box with duplicate-check exception handling
+    public <T extends BaseComplaint> void fileComplaint(T complaint, ComplaintBox<T> box) {
+        try {
+            box.addComplaint(complaint);
+            System.out.println("Complaint '" + complaint.title + "' filed successfully by " + this.username + ".");
+        } catch (DuplicateComplaintException e) {
+            System.err.println("[FILE COMPLAINT FAILED] " + e.getMessage());
+        }
+    }
+
+    // Safely accesses profile data — handles unauthorized access
+    public String viewProfile(Admin admin) {
+        try {
+            return this.profile.getVerifiedData(admin);
+        } catch (UnauthorizedAccessException e) {
+            System.err.println("[ACCESS DENIED] " + e.getMessage());
+            return null;
+        }
+    }
 }
+
