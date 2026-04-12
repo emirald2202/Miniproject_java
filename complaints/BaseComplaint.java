@@ -82,6 +82,11 @@ public abstract class BaseComplaint {
         }
     }
 
+    // Bypasses the state machine — used ONLY by EscalationThread for administrative auto-escalation
+    public void autoEscalate() {
+        this.status = Status.ESCALATED;
+    }
+
     // Assigns an officer to this complaint with validation
     public void assignOfficer(int officerId, int requestingOfficerId) 
             throws OfficerNotAssignedException {
