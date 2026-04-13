@@ -14,6 +14,8 @@ import exceptions.ComplaintExpiredException;
 import exceptions.InvalidStatusTransitionException;
 import search.ComplaintSearch;
 import store.DataStore;
+import threads.SessionTimeoutThread;
+import users.Admin;
 import users.Officer;
 
 import javafx.application.Platform;
@@ -38,6 +40,7 @@ public class OfficerDashboard {
 
     private final Stage stage;
     private final Officer officer;
+    private final SessionTimeoutThread sessionThread;
     private final DataStore store = DataStore.getInstance();
 
     private Button bellButton;
@@ -51,9 +54,10 @@ public class OfficerDashboard {
     private ChoiceBox<Status> statusChoiceBox;
     private BaseComplaint selectedComplaint;
 
-    public OfficerDashboard(Stage stage, Officer officer) {
-        this.stage   = stage;
-        this.officer = officer;
+    public OfficerDashboard(Stage stage, Officer officer, SessionTimeoutThread sessionThread) {
+        this.stage         = stage;
+        this.officer       = officer;
+        this.sessionThread = sessionThread;
     }
 
     // Builds and returns the full officer dashboard scene
@@ -64,7 +68,7 @@ public class OfficerDashboard {
         root.setRight(buildDetailPanel());
 
         store.notificationThread.registerCallback(officer.userId,
-            () -> Platform.runLater(this::updateBellCount));
+            () -> Platform.runLater(() -> { updateBellCount(); loadAllComplaints(); }));
 
         loadAllComplaints();
         return new Scene(root, 1000, 650);
@@ -79,7 +83,7 @@ public class OfficerDashboard {
 
         bellButton = new Button("🔔 0");
         bellButton.setOnAction(e -> {
-            store.sessionTimeoutThread.resetTimer();
+            sessionThread.resetTimer();
             showNotificationsPopup();
         });
         bellButton.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white;");
@@ -120,13 +124,13 @@ public class OfficerDashboard {
 
         Button resetButton = new Button("Show All");
         resetButton.setOnAction(e -> {
-            store.sessionTimeoutThread.resetTimer();
+            sessionThread.resetTimer();
             loadAllComplaints();
         });
 
         // Delegates to the correct ComplaintSearch overload based on dropdown selection
         searchButton.setOnAction(e -> {
-            store.sessionTimeoutThread.resetTimer();
+            sessionThread.resetTimer();
             String input = searchInputField.getText().trim();
             if (input.isEmpty()) return;
 
@@ -196,7 +200,7 @@ public class OfficerDashboard {
         complaintTable.getSelectionModel().selectedItemProperty().addListener(
             (obs, oldComplaint, newComplaint) -> {
                 if (newComplaint != null) {
-                    store.sessionTimeoutThread.resetTimer();
+                    sessionThread.resetTimer();
                     populateDetailPanel(newComplaint);
                 }
             });
@@ -233,7 +237,7 @@ public class OfficerDashboard {
         Button updateButton = new Button("Update Status");
         updateButton.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold;");
         updateButton.setOnAction(e -> {
-            store.sessionTimeoutThread.resetTimer();
+            sessionThread.resetTimer();
             handleStatusUpdate();
         });
 
@@ -281,10 +285,26 @@ public class OfficerDashboard {
         try {
             selectedComplaint.updateStatus(chosenStatus);
 
-            // Push user-friendly notification to queue — NotificationThread delivers it
-            String message = buildNotificationMessage(selectedComplaint, chosenStatus);
+            // Notify the citizen who filed the complaint
+            String citizenMsg = buildNotificationMessage(selectedComplaint, chosenStatus);
             store.notificationQueue.offer(
-                "USERID:" + selectedComplaint.filedByUserId + "|MSG:" + message);
+                "USERID:" + selectedComplaint.filedByUserId + "|MSG:" + citizenMsg);
+
+            // Notify all admins about the status change
+            String adminMsg = "Complaint #" + selectedComplaint.complaintId
+                + " \"" + selectedComplaint.title + "\" updated to " + chosenStatus
+                + " by officer " + officer.username + ".";
+            for (Admin admin : store.admins) {
+                store.notificationQueue.offer("USERID:" + admin.userId + "|MSG:" + adminMsg);
+            }
+
+            // If assigned to a different officer, notify them too (e.g. escalation by senior officer)
+            int assignedId = selectedComplaint.assignedToOfficerId;
+            if (assignedId != -1 && assignedId != officer.userId) {
+                store.notificationQueue.offer("USERID:" + assignedId + "|MSG:Complaint #"
+                    + selectedComplaint.complaintId + " \"" + selectedComplaint.title
+                    + "\" you are assigned to has been updated to " + chosenStatus + ".");
+            }
 
             loadAllComplaints();
             System.out.println("[Officer] Updated complaint #" + selectedComplaint.complaintId
@@ -339,7 +359,7 @@ public class OfficerDashboard {
     // Deregisters callback and stops session thread, then returns to login
     private void handleLogout() {
         store.notificationThread.deregisterCallback(officer.userId);
-        store.sessionTimeoutThread.stopThread();
+        sessionThread.stopThread();
         stage.setScene(new LoginScreen(stage).buildScene());
     }
 

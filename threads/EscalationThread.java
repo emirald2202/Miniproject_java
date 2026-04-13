@@ -17,9 +17,10 @@ public class EscalationThread extends Thread {
     private final DataStore store = DataStore.getInstance();
 
     // Score above which a complaint is automatically escalated
-    // Max possible score from subclass multipliers is 15 (CorruptionComplaint urgency=5),
-    // so threshold is 14 — anything scoring 15 auto-escalates.
-    private static final int ESCALATION_THRESHOLD = 14;
+    // PriorityCalculator scores range 5–33 (complaintType<<2 + urgency).
+    // Threshold 20 catches Water/Electricity/Sanitation/Traffic at urgency 5,
+    // and Water/Electricity at any urgency.
+    private static final int ESCALATION_THRESHOLD = 20;
 
     // How often the thread scans all complaints (in milliseconds)
     private static final int SCAN_INTERVAL_MS = 10000;
@@ -51,7 +52,8 @@ public class EscalationThread extends Thread {
                                    || complaint.status == Status.UNDER_REVIEW;
 
                 if (isActive) {
-                    int priorityScore = complaint.calculatePriorityScore();
+                    // Use the stored priorityScore (set by PriorityCalculator when filed)
+                    int priorityScore = complaint.priorityScore;
 
                     if (priorityScore > ESCALATION_THRESHOLD) {
                         complaint.autoEscalate();
