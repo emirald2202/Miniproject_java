@@ -1,9 +1,39 @@
-# Compiled Java class files
+# ─── Compiled Java class files ───────────────────────────────────────────────
 *.class
 
+# ─── Compiled output directory ───────────────────────────────────────────────
+out/
+bin/
+build/
 
+# ─── JavaFX native libraries (Windows) ───────────────────────────────────────
+# These are huge (~90MB+) runtime DLLs — never commit them
+lib_win/
 
+# ─── JavaFX native libraries (macOS) ─────────────────────────────────────────
+# These are huge (~97MB+) runtime dylibs — never commit them
+lib_mac/
 
-
-# Old single lib/ folder (deprecated)
+# ─── Old/deprecated lib folder ───────────────────────────────────────────────
 lib/
+
+# ─── JAR files (runtime dependencies, not source) ────────────────────────────
+*.jar
+
+# ─── OS-generated junk ───────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── IDE / Editor files ──────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.iml
+*.ipr
+*.iws
+*.project
+*.classpath
+.settings/
+
+# ─── Logs ────────────────────────────────────────────────────────────────────
+*.log
