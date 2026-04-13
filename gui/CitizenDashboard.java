@@ -298,8 +298,9 @@ public class CitizenDashboard {
         for (BaseComplaint c : ownComplaints) {
             items.add("[" + c.status + "] " + c.title);
         }
-        complaintListView.getSelectionModel().clearSelection();
-        complaintListView.setItems(FXCollections.observableArrayList(items));
+        // Use setAll() to update in-place — avoids JavaFX 17 IndexOutOfBoundsException
+        // that occurs when replacing the entire items list while a selection is active
+        complaintListView.getItems().setAll(items);
     }
 
     // Collects all complaints filed by this citizen from every box

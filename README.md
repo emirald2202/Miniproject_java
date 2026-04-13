@@ -1,10 +1,10 @@
-# 🏛️ Civic Complaint Management System
+# Civic Complaint Management System
 
 > A Java-based complaint management system with a **JavaFX GUI**, demonstrating core **Object-Oriented Programming** concepts — built as a mini project for OOPD coursework.
 
 ---
 
-## 📋 Table of Contents
+## Table of Contents
 
 - [Quick Start](#quick-start)
 - [Overview](#overview)
@@ -32,7 +32,7 @@
 
 Each OS has a pre-configured run script. Just clone and run:
 
-#### 🐧 Linux
+#### Linux
 ```bash
 chmod +x run_linux.sh
 ./run_linux.sh            # Launch GUI
@@ -40,26 +40,20 @@ chmod +x run_linux.sh
 ```
 > Uses `lib_linux/` — bundled JavaFX **Linux x64** native libraries (`.so` files).
 
-#### 🍎 macOS
+#### macOS
 ```bash
 chmod +x run_mac.sh
 ./run_mac.sh              # Launch GUI
 ./run_mac.sh --test       # Run backend tests (no GUI)
 ```
-> Uses `lib/` — bundled JavaFX **macOS** native libraries (`.dylib` files).
+> Uses `lib_mac/` — bundled JavaFX **macOS** native libraries (`.dylib` files).
 
-#### 🪟 Windows
+#### Windows
 ```cmd
 run_windows.bat            REM Launch GUI
 run_windows.bat --test     REM Run backend tests (no GUI)
 ```
-> Uses `lib\` — make sure you have the Windows JavaFX SDK in `lib\`. 
-> Download from [Gluon](https://gluonhq.com/products/javafx/) if needed and extract to `lib\`.
-
-> [!NOTE]  
-> The `lib/` folder ships with **macOS** native libraries (`.dylib`).  
-> The `lib_linux/` folder ships with **Linux x64** native libraries (`.so`).  
-> For **Windows**, download the JavaFX SDK for Windows from [Gluon](https://gluonhq.com/products/javafx/) and place the contents in `lib/` (or create `lib_windows/` and update the batch script).
+> Uses `lib_win/` — bundled JavaFX **Windows** native libraries (`.dll` files).
 
 ---
 
@@ -101,7 +95,8 @@ Miniproject_java/
 ├── run_linux.sh                       # One-click run for Linux
 ├── run_mac.sh                         # One-click run for macOS
 ├── run_windows.bat                    # One-click run for Windows
-├── lib/                               # JavaFX SDK — macOS native (.dylib)
+├── lib_mac/                           # JavaFX SDK — macOS native (.dylib)
+├── lib_win/                           # JavaFX SDK — Windows native (.dll)
 ├── lib_linux/                         # JavaFX SDK — Linux x64 native (.so)
 │
 ├── gui/                               # JavaFX GUI screens
@@ -113,13 +108,13 @@ Miniproject_java/
 │
 ├── complaints/                        # Complaint hierarchy
 │   ├── BaseComplaint.java             # Abstract parent (status workflow + officer assignment)
-│   ├── WaterSupplyComplaint.java      # priority = urgency × 3
-│   ├── ElectricityComplaint.java      # priority = urgency × 3
-│   ├── CorruptionComplaint.java       # priority = urgency × 3
-│   ├── SanitationComplaint.java       # priority = urgency × 2
-│   ├── InfrastructureComplaint.java   # priority = urgency × 2
-│   ├── TrafficComplaint.java          # priority = urgency × 1
-│   └── NoiseComplaint.java            # priority = urgency × 1
+│   ├── WaterSupplyComplaint.java      # priority = urgency x 3
+│   ├── ElectricityComplaint.java      # priority = urgency x 3
+│   ├── CorruptionComplaint.java       # priority = urgency x 3
+│   ├── SanitationComplaint.java       # priority = urgency x 2
+│   ├── InfrastructureComplaint.java   # priority = urgency x 2
+│   ├── TrafficComplaint.java          # priority = urgency x 1
+│   └── NoiseComplaint.java            # priority = urgency x 1
 │
 ├── users/                             # User hierarchy
 │   ├── BaseUser.java                  # Abstract parent (login, performAction)
@@ -139,10 +134,10 @@ Miniproject_java/
 │   └── ComplaintNotFoundException.java
 │
 ├── enums/                             # System enumerations
-│   ├── Status.java                    # FILED → UNDER_REVIEW → RESOLVED / ESCALATED / REJECTED
+│   ├── Status.java                    # FILED -> UNDER_REVIEW -> RESOLVED / ESCALATED / REJECTED
 │   ├── Role.java                      # CITIZEN, OFFICER, ADMIN
 │   ├── ComplaintCategory.java         # 7 complaint categories
-│   └── OfficerDepartment.java        # ACB, MSEB, PWD, LOCAL_POLICE, etc.
+│   └── OfficerDepartment.java         # ACB, MSEB, PWD, LOCAL_POLICE, etc.
 │
 ├── priority/                          # Priority scoring
 │   └── PriorityCalculator.java        # Bitwise scoring + XOR log obfuscation
@@ -156,7 +151,7 @@ Miniproject_java/
 │   └── SessionTimeoutThread.java      # Logs out idle users
 │
 ├── profile/                           # Secure data
-│   └── CitizenProfile.java           # Encapsulated citizen PII (Aadhaar, phone, address)
+│   └── CitizenProfile.java            # Encapsulated citizen PII (Aadhaar, phone, address)
 │
 └── store/                             # Data persistence
     └── DataStore.java                 # Singleton — holds all runtime data
@@ -212,30 +207,30 @@ All 6 exceptions extend `Exception` and include both `(String message)` and `(St
 Valid complaint status transitions enforced by `InvalidStatusTransitionException`:
 
 ```
-                    ┌──────────────┐
-                    │    FILED     │
-                    └──────┬───────┘
-                           │
-                 ┌─────────▼─────────┐
-                 │   UNDER_REVIEW    │
-                 └─┬───────┬───────┬─┘
-                   │       │       │
-          ┌────────▼──┐    │   ┌───▼────────┐
-          │ ESCALATED │    │   │  REJECTED  │
-          └────┬──────┘    │   └────────────┘
-               │           │
-               └─────┬─────┘
-                     │
-               ┌─────▼─────┐
-               │  RESOLVED  │
-               └────────────┘
+                    +--------------+
+                    |    FILED     |
+                    +------+-------+
+                           |
+                 +---------v---------+
+                 |   UNDER_REVIEW    |
+                 +-+-------+-------+-+
+                   |       |       |
+          +--------+-+     |   +---+--------+
+          | ESCALATED |     |   |  REJECTED  |
+          +----+------+     |   +------------+
+               |            |
+               +------+-----+
+                      |
+                +-----v-----+
+                |  RESOLVED  |
+                +------------+
 ```
 
 **Rules:**
 - `FILED` → `UNDER_REVIEW` or `REJECTED`
 - `UNDER_REVIEW` → `RESOLVED`, `ESCALATED`, or `REJECTED`
 - `ESCALATED` → `UNDER_REVIEW` or `RESOLVED`
-- `RESOLVED` / `REJECTED` → ❌ No further transitions (throws `ComplaintExpiredException`)
+- `RESOLVED` / `REJECTED` → No further transitions (throws `ComplaintExpiredException`)
 
 ---
 
@@ -260,34 +255,46 @@ If you prefer not to use the scripts:
 ### Compile
 ```bash
 # Linux
-javac --module-path lib_linux --add-modules javafx.controls,javafx.fxml -d out \
-    Main.java enums/*.java exceptions/*.java profile/*.java users/*.java \
+javac --module-path lib_linux --add-modules javafx.controls -cp . \
+    enums/*.java exceptions/*.java profile/*.java users/*.java \
     complaints/*.java containers/*.java store/*.java priority/*.java \
-    search/*.java threads/*.java gui/*.java
+    search/*.java threads/*.java gui/*.java Main.java
 
 # macOS
-javac --module-path lib --add-modules javafx.controls,javafx.fxml -d out \
-    Main.java enums/*.java exceptions/*.java profile/*.java users/*.java \
+javac --module-path lib_mac --add-modules javafx.controls -cp . \
+    enums/*.java exceptions/*.java profile/*.java users/*.java \
     complaints/*.java containers/*.java store/*.java priority/*.java \
-    search/*.java threads/*.java gui/*.java
+    search/*.java threads/*.java gui/*.java Main.java
+
+# Windows
+javac --module-path lib_win --add-modules javafx.controls -cp . \
+    enums/*.java exceptions/*.java profile/*.java users/*.java \
+    complaints/*.java containers/*.java store/*.java priority/*.java \
+    search/*.java threads/*.java gui/*.java Main.java
 ```
 
 ### Run GUI
 ```bash
 # Linux
-java --module-path lib_linux --add-modules javafx.controls,javafx.fxml -cp out Main
+java --module-path lib_linux --add-modules javafx.controls -cp . Main
 
 # macOS
-java --module-path lib --add-modules javafx.controls,javafx.fxml -cp out Main
+java --module-path lib_mac --add-modules javafx.controls -cp . Main
+
+# Windows
+java --module-path lib_win --add-modules javafx.controls -cp . Main
 ```
 
 ### Run Backend Tests (no GUI)
 ```bash
 # Linux
-java --module-path lib_linux --add-modules javafx.controls,javafx.fxml -cp out Main --test
+java --module-path lib_linux --add-modules javafx.controls -cp . Main --test
 
 # macOS
-java --module-path lib --add-modules javafx.controls,javafx.fxml -cp out Main --test
+java --module-path lib_mac --add-modules javafx.controls -cp . Main --test
+
+# Windows
+java --module-path lib_win --add-modules javafx.controls -cp . Main --test
 ```
 
 ---
