@@ -7,8 +7,9 @@ bin/
 build/
 
 # ─── JavaFX native libraries (Windows) ───────────────────────────────────────
-# These are huge (~90MB+) runtime DLLs — never commit them
-lib_win/
+# ─── JavaFX native libraries (Linux) ──────────────────────────────────────────
+# These are huge (~120MB+) runtime .so files — never commit them
+lib_linux/
 
 # ─── JavaFX native libraries (macOS) ─────────────────────────────────────────
 # These are huge (~97MB+) runtime dylibs — never commit them
@@ -16,6 +17,7 @@ lib_mac/
 
 # ─── Old/deprecated lib folder ───────────────────────────────────────────────
 lib/
+
 
 # ─── JAR files (runtime dependencies, not source) ────────────────────────────
 *.jar
