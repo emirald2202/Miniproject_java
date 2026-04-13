@@ -11,6 +11,8 @@ import enums.Status;
 import exceptions.DuplicateComplaintException;
 import priority.PriorityCalculator;
 import store.DataStore;
+import threads.SessionTimeoutThread;
+import users.Admin;
 import users.Citizen;
 
 import javafx.application.Platform;
@@ -33,15 +35,17 @@ public class CitizenDashboard {
 
     private final Stage stage;
     private final Citizen citizen;
+    private final SessionTimeoutThread sessionThread;
     private final DataStore store = DataStore.getInstance();
 
     private Button      bellButton;
     private ListView<String> complaintListView;
     private List<BaseComplaint> ownComplaints = new ArrayList<>();
 
-    public CitizenDashboard(Stage stage, Citizen citizen) {
-        this.stage   = stage;
-        this.citizen = citizen;
+    public CitizenDashboard(Stage stage, Citizen citizen, SessionTimeoutThread sessionThread) {
+        this.stage         = stage;
+        this.citizen       = citizen;
+        this.sessionThread = sessionThread;
     }
 
     // Builds and returns the full citizen dashboard scene
@@ -53,7 +57,7 @@ public class CitizenDashboard {
 
         // Register bell notification callback — fires when NotificationThread delivers a message
         store.notificationThread.registerCallback(citizen.userId,
-            () -> Platform.runLater(this::updateBellCount));
+            () -> Platform.runLater(() -> { updateBellCount(); refreshComplaintList(); }));
 
         refreshComplaintList();
         return new Scene(root, 900, 650);
@@ -66,7 +70,7 @@ public class CitizenDashboard {
 
         bellButton = new Button("🔔 0");
         bellButton.setOnAction(e -> {
-            store.sessionTimeoutThread.resetTimer();
+            sessionThread.resetTimer();
             showNotificationsPopup();
         });
 
@@ -119,7 +123,7 @@ public class CitizenDashboard {
             (obs, oldIdx, newIdx) -> {
                 int idx = newIdx.intValue();
                 if (idx >= 0 && idx < ownComplaints.size()) {
-                    store.sessionTimeoutThread.resetTimer();
+                    sessionThread.resetTimer();
                     showComplaintDetailPopup(ownComplaints.get(idx));
                 }
             });
@@ -169,7 +173,7 @@ public class CitizenDashboard {
 
         // Live priority score update as slider moves
         urgencySlider.valueProperty().addListener((obs, oldVal, newVal) -> {
-            store.sessionTimeoutThread.resetTimer();
+            sessionThread.resetTimer();
             int areaCode = areaCodeField.getText().isEmpty() ? 0 : Integer.parseInt(areaCodeField.getText());
             int typeInt  = categoryToInt(categoryChoiceBox.getValue());
             int score    = PriorityCalculator.calculateScore(typeInt, newVal.intValue(), areaCode);
@@ -178,7 +182,7 @@ public class CitizenDashboard {
 
         // Also update score when category changes
         categoryChoiceBox.valueProperty().addListener((obs, oldVal, newVal) -> {
-            store.sessionTimeoutThread.resetTimer();
+            sessionThread.resetTimer();
             int areaCode = areaCodeField.getText().isEmpty() ? 0 : Integer.parseInt(areaCodeField.getText());
             int typeInt  = categoryToInt(newVal);
             int score    = PriorityCalculator.calculateScore(typeInt, (int) urgencySlider.getValue(), areaCode);
@@ -186,7 +190,7 @@ public class CitizenDashboard {
         });
 
         submitButton.setOnAction(e -> {
-            store.sessionTimeoutThread.resetTimer();
+            sessionThread.resetTimer();
             handleSubmit(titleField, descriptionArea, categoryChoiceBox, areaCodeField, urgencySlider, priorityScoreLabel);
         });
 
@@ -233,18 +237,26 @@ public class CitizenDashboard {
         int urgencyLevel = (int) urgencySlider.getValue();
         int typeInt      = categoryToInt(category);
         int score        = PriorityCalculator.calculateScore(typeInt, urgencyLevel, areaCode);
-        Status autoStatus = PriorityCalculator.autoAssignStatus(score);
         int newId        = generateNextComplaintId();
 
         BaseComplaint newComplaint = createComplaint(newId, title, description, areaCode, urgencyLevel, category);
         newComplaint.priorityScore = score;
-        newComplaint.status        = autoStatus;
+        // New complaints always start as FILED — EscalationThread handles auto-escalation later
+        newComplaint.status = Status.FILED;
 
         try {
             addToCorrectBox(newComplaint, category);
+
+            // Notify all admins that a new complaint has been filed
+            for (Admin admin : store.admins) {
+                store.notificationQueue.offer("USERID:" + admin.userId
+                    + "|MSG:New complaint filed by " + citizen.username
+                    + ": \"" + newComplaint.title + "\"");
+            }
+
             refreshComplaintList();
             clearForm(titleField, descArea, areaCodeField, urgencySlider, priorityScoreLabel);
-            showSuccessAlert("Complaint filed successfully!\nStatus: " + autoStatus + "\nPriority Score: " + score);
+            showSuccessAlert("Complaint filed successfully!\nStatus: FILED\nPriority Score: " + score);
         } catch (DuplicateComplaintException duplicateException) {
             showErrorAlert(duplicateException.getMessage());
         }
@@ -409,7 +421,7 @@ public class CitizenDashboard {
     // Deregisters callback and stops session thread, then returns to login
     private void handleLogout() {
         store.notificationThread.deregisterCallback(citizen.userId);
-        store.sessionTimeoutThread.stopThread();
+        sessionThread.stopThread();
         stage.setScene(new LoginScreen(stage).buildScene());
     }
 

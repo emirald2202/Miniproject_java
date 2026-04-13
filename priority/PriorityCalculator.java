@@ -20,18 +20,18 @@ public class PriorityCalculator {
     // XOR key used for log obfuscation and decoding
     private static final int XOR_KEY = 0b10101010;
 
-    // Calculates the final priority score using bitwise shift, OR, and XOR operations
+    // Calculates priority score using left-shift on type (gives it more weight) plus urgency
+    // Range: (1<<2)+1=5  to  (7<<2)+5=33
+    // areaCode param retained for API compatibility but not used in scoring
     public static int calculateScore(int complaintType, int urgencyLevel, int areaCode) {
-        int rawScore   = (complaintType << 2) | (urgencyLevel & 0b00000111);
-        int finalScore = rawScore ^ (areaCode & 0xFF);
-        return finalScore;
+        return (complaintType << 2) + urgencyLevel;
     }
 
-    // Assigns a Status automatically based on the calculated priority score
+    // Assigns a Status automatically based on the calculated priority score (scale 5–33)
     public static Status autoAssignStatus(int finalScore) {
-        if (finalScore > 15) {
+        if (finalScore > 20) {
             return Status.ESCALATED;
-        } else if (finalScore > 8) {
+        } else if (finalScore > 12) {
             return Status.UNDER_REVIEW;
         } else {
             return Status.FILED;

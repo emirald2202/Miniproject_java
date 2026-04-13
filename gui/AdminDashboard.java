@@ -6,11 +6,13 @@ package gui;
 
 import complaints.*;
 import enums.ComplaintCategory;
+import enums.OfficerDepartment;
 import enums.Status;
 import exceptions.UnauthorizedAccessException;
-import priority.PriorityCalculator;
+import profile.CitizenProfile;
 import search.ComplaintSearch;
 import store.DataStore;
+import threads.SessionTimeoutThread;
 import users.Admin;
 import users.Citizen;
 import users.Officer;
@@ -31,7 +33,6 @@ import javafx.scene.text.FontWeight;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,6 +40,7 @@ public class AdminDashboard {
 
     private final Stage stage;
     private final Admin admin;
+    private final SessionTimeoutThread sessionThread;
     private final DataStore store = DataStore.getInstance();
 
     private Button bellButton;
@@ -50,10 +52,12 @@ public class AdminDashboard {
     private ObservableList<BaseComplaint> noiseData;
 
     private Label selectedComplaintLabel;
+    private ChoiceBox<Officer> officerChoiceBox;
 
-    public AdminDashboard(Stage stage, Admin admin) {
-        this.stage = stage;
-        this.admin = admin;
+    public AdminDashboard(Stage stage, Admin admin, SessionTimeoutThread sessionThread) {
+        this.stage         = stage;
+        this.admin         = admin;
+        this.sessionThread = sessionThread;
     }
 
     // Builds and returns the full admin dashboard scene
@@ -62,10 +66,9 @@ public class AdminDashboard {
         root.setTop(buildTopBar());
         root.setCenter(buildCenterPanel());
         root.setRight(buildActionPanel());
-        root.setBottom(buildLogPanel());
 
         store.notificationThread.registerCallback(admin.userId,
-            () -> Platform.runLater(this::updateBellCount));
+            () -> Platform.runLater(() -> { updateBellCount(); refreshAllTabs(); }));
 
         refreshAllTabs();
         return new Scene(root, 1100, 700);
@@ -80,7 +83,7 @@ public class AdminDashboard {
 
         bellButton = new Button("🔔 0");
         bellButton.setOnAction(e -> {
-            store.sessionTimeoutThread.resetTimer();
+            sessionThread.resetTimer();
             showNotificationsPopup();
         });
         bellButton.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white;");
@@ -122,13 +125,13 @@ public class AdminDashboard {
 
         Button resetButton = new Button("Show All");
         resetButton.setOnAction(e -> {
-            store.sessionTimeoutThread.resetTimer();
+            sessionThread.resetTimer();
             refreshAllTabs();
         });
 
         // Routes to correct ComplaintSearch overload based on dropdown
         searchButton.setOnAction(e -> {
-            store.sessionTimeoutThread.resetTimer();
+            sessionThread.resetTimer();
             String input = searchInputField.getText().trim();
             if (input.isEmpty()) return;
 
@@ -182,12 +185,14 @@ public class AdminDashboard {
         Tab infraTab      = new Tab("Infrastructure", buildTabTable(infraData));
         Tab corruptionTab = new Tab("Corruption",     buildTabTable(corruptionData));
         Tab noiseTab      = new Tab("Noise",          buildTabTable(noiseData));
+        Tab manageTab     = new Tab("Manage Users",   buildManageUsersPane());
 
         infraTab.setClosable(false);
         corruptionTab.setClosable(false);
         noiseTab.setClosable(false);
+        manageTab.setClosable(false);
 
-        TabPane tabPane = new TabPane(infraTab, corruptionTab, noiseTab);
+        TabPane tabPane = new TabPane(infraTab, corruptionTab, noiseTab, manageTab);
         VBox.setVgrow(tabPane, Priority.ALWAYS);
         return tabPane;
     }
@@ -242,7 +247,7 @@ public class AdminDashboard {
         // Track selected complaint for the action panel
         table.getSelectionModel().selectedItemProperty().addListener((obs, old, newItem) -> {
             if (newItem != null) {
-                store.sessionTimeoutThread.resetTimer();
+                sessionThread.resetTimer();
                 selectedComplaint = newItem;
                 selectedComplaintLabel.setText("#" + newItem.complaintId + " — " + newItem.title);
             }
@@ -260,8 +265,8 @@ public class AdminDashboard {
         selectedComplaintLabel.setWrapText(true);
         selectedComplaintLabel.setMaxWidth(190);
 
-        // Officer assignment
-        ChoiceBox<Officer> officerChoiceBox = new ChoiceBox<>();
+        // Officer assignment — field so it can be refreshed when new officers are added
+        officerChoiceBox = new ChoiceBox<>();
         officerChoiceBox.getItems().addAll(store.officers);
         officerChoiceBox.setConverter(new javafx.util.StringConverter<>() {
             @Override public String toString(Officer o)   { return o == null ? "" : o.username; }
@@ -271,7 +276,7 @@ public class AdminDashboard {
         Button assignButton = new Button("Assign Officer");
         assignButton.setStyle("-fx-background-color: #2980b9; -fx-text-fill: white;");
         assignButton.setOnAction(e -> {
-            store.sessionTimeoutThread.resetTimer();
+            sessionThread.resetTimer();
             handleAssignOfficer(officerChoiceBox.getValue());
         });
 
@@ -279,7 +284,7 @@ public class AdminDashboard {
         Button viewCitizenButton = new Button("View Citizen Details");
         viewCitizenButton.setStyle("-fx-background-color: #8e44ad; -fx-text-fill: white;");
         viewCitizenButton.setOnAction(e -> {
-            store.sessionTimeoutThread.resetTimer();
+            sessionThread.resetTimer();
             handleViewCitizenDetails();
         });
 
@@ -301,48 +306,6 @@ public class AdminDashboard {
         return actionPanel;
     }
 
-    // Builds the bottom log panel — obfuscated and decoded logs side by side (Assignment 1 demo)
-    private HBox buildLogPanel() {
-        Label heading = new Label("System Log (XOR Obfuscation Demo)");
-        heading.setFont(Font.font("System", FontWeight.BOLD, 12));
-
-        TextArea obfuscatedArea = new TextArea();
-        obfuscatedArea.setEditable(false);
-        obfuscatedArea.setPromptText("Obfuscated log will appear here...");
-        obfuscatedArea.setPrefRowCount(3);
-        obfuscatedArea.setWrapText(true);
-
-        TextArea decodedArea = new TextArea();
-        decodedArea.setEditable(false);
-        decodedArea.setPromptText("Decoded log will appear here...");
-        decodedArea.setPrefRowCount(3);
-        decodedArea.setWrapText(true);
-
-        Button generateButton = new Button("Generate Log");
-        generateButton.setStyle("-fx-background-color: #16a085; -fx-text-fill: white;");
-        generateButton.setOnAction(e -> {
-            store.sessionTimeoutThread.resetTimer();
-            // Build a log entry and run it through PriorityCalculator XOR methods
-            String rawLog = "Admin:" + admin.username
-                + " | Action:SystemView"
-                + " | Time:" + LocalDateTime.now()
-                + " | Complaints:" + getTotalComplaintCount();
-            String obfuscated = PriorityCalculator.obfuscateLog(rawLog);
-            String decoded    = PriorityCalculator.decodeLog(obfuscated);
-            obfuscatedArea.setText(obfuscated);
-            decodedArea.setText(decoded);
-        });
-
-        VBox leftLog  = new VBox(4, new Label("Obfuscated Log:"), obfuscatedArea);
-        VBox rightLog = new VBox(4, new Label("Decoded Log:"),    decodedArea);
-        HBox.setHgrow(leftLog,  Priority.ALWAYS);
-        HBox.setHgrow(rightLog, Priority.ALWAYS);
-
-        HBox logPanel = new HBox(10, new VBox(4, heading, generateButton), leftLog, rightLog);
-        logPanel.setPadding(new Insets(10, 15, 10, 15));
-        logPanel.setStyle("-fx-background-color: #ecf0f1; -fx-border-color: #bdc3c7; -fx-border-width: 1 0 0 0;");
-        return logPanel;
-    }
 
     // Assigns the selected officer to the selected complaint — admin authority bypasses assignOfficer() validation
     private void handleAssignOfficer(Officer selectedOfficer) {
@@ -357,6 +320,17 @@ public class AdminDashboard {
         // Admin directly sets the field — this is an administrative override, not a normal officer action
         selectedComplaint.assignedToOfficerId = selectedOfficer.userId;
         selectedOfficer.assignedComplaints++;
+
+        // Notify the assigned officer
+        store.notificationQueue.offer("USERID:" + selectedOfficer.userId
+            + "|MSG:You have been assigned complaint #" + selectedComplaint.complaintId
+            + ": \"" + selectedComplaint.title + "\". Please review and take action.");
+
+        // Notify the citizen who filed the complaint
+        store.notificationQueue.offer("USERID:" + selectedComplaint.filedByUserId
+            + "|MSG:Your complaint \"" + selectedComplaint.title
+            + "\" has been assigned to an officer and is now being handled.");
+
         refreshAllTabs();
         System.out.println("[Admin] Assigned complaint #" + selectedComplaint.complaintId
                            + " to " + selectedOfficer.username);
@@ -412,6 +386,137 @@ public class AdminDashboard {
         modal.showAndWait();
     }
 
+    // Builds the Manage Users tab — add officers, citizens, and admins at runtime
+    private ScrollPane buildManageUsersPane() {
+        VBox pane = new VBox(20);
+        pane.setPadding(new Insets(20));
+
+        // ── ADD OFFICER ───────────────────────────────────────────────────────
+        Label officerHeading = new Label("Add New Officer");
+        officerHeading.setFont(Font.font("System", FontWeight.BOLD, 14));
+
+        TextField oUsername = new TextField(); oUsername.setPromptText("Username");
+        javafx.scene.control.PasswordField oPassword = new javafx.scene.control.PasswordField();
+        oPassword.setPromptText("Password");
+        ChoiceBox<OfficerDepartment> oDept = new ChoiceBox<>();
+        oDept.getItems().addAll(OfficerDepartment.values());
+        oDept.setValue(OfficerDepartment.PWD);
+
+        Button addOfficerBtn = new Button("Add Officer");
+        addOfficerBtn.setStyle("-fx-background-color: #2980b9; -fx-text-fill: white;");
+        addOfficerBtn.setOnAction(e -> {
+            sessionThread.resetTimer();
+            String u = oUsername.getText().trim();
+            String p = oPassword.getText();
+            if (u.isEmpty() || p.isEmpty()) { showErrorAlert("Fill all officer fields."); return; }
+            int newId = generateNextUserId();
+            Officer newOfficer = new Officer(newId, u, p, oDept.getValue());
+            store.officers.add(newOfficer);
+            officerChoiceBox.getItems().add(newOfficer);
+            oUsername.clear(); oPassword.clear();
+            showInfoAlert("Officer \"" + u + "\" added (ID=" + newId + ").");
+        });
+
+        // ── ADD CITIZEN ───────────────────────────────────────────────────────
+        Label citizenHeading = new Label("Add New Citizen");
+        citizenHeading.setFont(Font.font("System", FontWeight.BOLD, 14));
+
+        TextField cUsername = new TextField(); cUsername.setPromptText("Username");
+        javafx.scene.control.PasswordField cPassword = new javafx.scene.control.PasswordField();
+        cPassword.setPromptText("Password");
+        TextField cFullName = new TextField(); cFullName.setPromptText("Full Name");
+        TextField cAadhaar  = new TextField(); cAadhaar.setPromptText("Aadhaar (XXXX-XXXX-XXXX)");
+        TextField cPhone    = new TextField(); cPhone.setPromptText("Phone Number");
+        TextField cAddress  = new TextField(); cAddress.setPromptText("Home Address");
+
+        Button addCitizenBtn = new Button("Add Citizen");
+        addCitizenBtn.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white;");
+        addCitizenBtn.setOnAction(e -> {
+            sessionThread.resetTimer();
+            String u = cUsername.getText().trim();
+            String p = cPassword.getText();
+            String n = cFullName.getText().trim();
+            String a = cAadhaar.getText().trim();
+            String ph = cPhone.getText().trim();
+            String ad = cAddress.getText().trim();
+            if (u.isEmpty() || p.isEmpty() || n.isEmpty() || a.isEmpty() || ph.isEmpty() || ad.isEmpty()) {
+                showErrorAlert("Fill all citizen fields."); return;
+            }
+            int newId = generateNextUserId();
+            CitizenProfile profile = new CitizenProfile(n, a, ph, ad);
+            Citizen newCitizen = new Citizen(newId, u, p, profile);
+            store.citizens.add(newCitizen);
+            cUsername.clear(); cPassword.clear(); cFullName.clear();
+            cAadhaar.clear(); cPhone.clear(); cAddress.clear();
+            showInfoAlert("Citizen \"" + u + "\" registered (ID=" + newId + ").");
+        });
+
+        // ── ADD ADMIN ─────────────────────────────────────────────────────────
+        Label adminHeading = new Label("Add New Admin");
+        adminHeading.setFont(Font.font("System", FontWeight.BOLD, 14));
+
+        TextField aUsername = new TextField(); aUsername.setPromptText("Username");
+        javafx.scene.control.PasswordField aPassword = new javafx.scene.control.PasswordField();
+        aPassword.setPromptText("Password");
+        TextField aLevel = new TextField(); aLevel.setPromptText("Admin Level (1-5)");
+        aLevel.textProperty().addListener((obs, oldVal, newVal) -> {
+            if (!newVal.matches("\\d*")) aLevel.setText(oldVal);
+        });
+
+        Button addAdminBtn = new Button("Add Admin");
+        addAdminBtn.setStyle("-fx-background-color: #8e44ad; -fx-text-fill: white;");
+        addAdminBtn.setOnAction(e -> {
+            sessionThread.resetTimer();
+            String u = aUsername.getText().trim();
+            String p = aPassword.getText();
+            if (u.isEmpty() || p.isEmpty() || aLevel.getText().isEmpty()) {
+                showErrorAlert("Fill all admin fields."); return;
+            }
+            int newId = generateNextUserId();
+            int level = Integer.parseInt(aLevel.getText());
+            Admin newAdmin = new Admin(newId, u, p, level);
+            store.admins.add(newAdmin);
+            aUsername.clear(); aPassword.clear(); aLevel.clear();
+            showInfoAlert("Admin \"" + u + "\" added (ID=" + newId + ").");
+        });
+
+        pane.getChildren().addAll(
+            officerHeading,
+            new Label("Username:"), oUsername,
+            new Label("Password:"), oPassword,
+            new Label("Department:"), oDept,
+            addOfficerBtn,
+            new Separator(),
+            citizenHeading,
+            new Label("Username:"), cUsername,
+            new Label("Password:"), cPassword,
+            new Label("Full Name:"), cFullName,
+            new Label("Aadhaar:"), cAadhaar,
+            new Label("Phone:"), cPhone,
+            new Label("Address:"), cAddress,
+            addCitizenBtn,
+            new Separator(),
+            adminHeading,
+            new Label("Username:"), aUsername,
+            new Label("Password:"), aPassword,
+            new Label("Admin Level:"), aLevel,
+            addAdminBtn
+        );
+
+        ScrollPane scroll = new ScrollPane(pane);
+        scroll.setFitToWidth(true);
+        return scroll;
+    }
+
+    // Generates the next unique user ID across all user lists
+    private int generateNextUserId() {
+        int max = 0;
+        for (Citizen c  : store.citizens) if (c.userId  > max) max = c.userId;
+        for (Officer o  : store.officers) if (o.userId  > max) max = o.userId;
+        for (Admin a    : store.admins)   if (a.userId  > max) max = a.userId;
+        return max + 1;
+    }
+
     // Reloads each tab's data from its respective typed ComplaintBox
     private void refreshAllTabs() {
         infraData.setAll(store.infraBox.getAllComplaints());
@@ -419,12 +524,6 @@ public class AdminDashboard {
         noiseData.setAll(store.noiseBox.getAllComplaints());
     }
 
-    // Returns the total complaint count across all 7 boxes — used in log generation
-    private int getTotalComplaintCount() {
-        return store.infraBox.size() + store.corruptionBox.size() + store.noiseBox.size()
-             + store.trafficBox.size() + store.sanitationBox.size()
-             + store.waterSupplyBox.size() + store.electricityBox.size();
-    }
 
     // Updates bell button with current unread notification count
     private void updateBellCount() {
@@ -445,7 +544,7 @@ public class AdminDashboard {
     // Deregisters callback, stops session, returns to login
     private void handleLogout() {
         store.notificationThread.deregisterCallback(admin.userId);
-        store.sessionTimeoutThread.stopThread();
+        sessionThread.stopThread();
         stage.setScene(new LoginScreen(stage).buildScene());
     }
 
@@ -454,6 +553,14 @@ public class AdminDashboard {
         System.err.println("[ADMIN ERROR] " + message);
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle("System Alert");
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
+    // Shows a success confirmation dialog
+    private void showInfoAlert(String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Success");
         alert.setContentText(message);
         alert.showAndWait();
     }

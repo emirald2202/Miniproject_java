@@ -6,6 +6,7 @@ import complaints.*;
 import containers.*;
 import enums.*;
 import exceptions.*;
+import priority.PriorityCalculator;
 import profile.*;
 import store.*;
 import threads.*;
@@ -15,7 +16,6 @@ import javafx.application.Application;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Scanner;
 
 public class Main {
 
@@ -36,25 +36,12 @@ public class Main {
         // Store reference so GUI dashboards can call registerCallback() later
         store.notificationThread = notificationThread;
 
-        // Startup menu — demonstrates switch-case control flow (Assignment 1)
-        Scanner scanner = new Scanner(System.in);
-        System.out.println("╔══════════════════════════════════════════╗");
-        System.out.println("║     Civilian Complaint Portal v1.0       ║");
-        System.out.println("╚══════════════════════════════════════════╝");
-        System.out.println("[1] Run Full Application (JavaFX GUI)");
-        System.out.println("[2] Run Backend Test  (terminal only)");
-        System.out.println("[3] Exit");
-        System.out.print("Enter choice: ");
-
-        int choice = scanner.nextInt();
-        switch (choice) {
-            case 1 -> runFullApplication();
-            case 2 -> runBackendTest();
-            case 3 -> { System.out.println("Goodbye."); System.exit(0); }
-            default -> System.out.println("Invalid choice. Please enter 1, 2, or 3.");
+        // Pass --test as CLI arg to run the terminal backend test suite instead of the GUI
+        if (args.length > 0 && args[0].equals("--test")) {
+            runBackendTest();
+        } else {
+            Application.launch(gui.MainApp.class, args);
         }
-
-        scanner.close();
     }
 
     // Loads all hardcoded demo users and complaints into DataStore so the evaluator sees a
@@ -87,63 +74,69 @@ public class Main {
         // Status is set directly here because this is initialization, not a user action.
         // Runtime status changes go through updateStatus() which enforces the state machine.
         try {
-            // 1. Infrastructure — UNDER_REVIEW, filed by ram, handled by officer1
+            // Priority scores use PriorityCalculator formula: (complaintType<<2) + urgency, range 5–33
+            // 1. Infrastructure(type=1) — UNDER_REVIEW, filed by ram, handled by officer1
+            // score = (1<<2)+4 = 8
             InfrastructureComplaint brokenRoad = new InfrastructureComplaint(
                 1, "Broken Road on MG Road",
                 "Large potholes causing accidents near MG Road junction.",
                 1, 101, 4, LocalDateTime.now().minusDays(3));
-            brokenRoad.priorityScore       = brokenRoad.calculatePriorityScore(); // 4*2 = 8
+            brokenRoad.priorityScore       = PriorityCalculator.calculateScore(1, 4, 0); // 8
             brokenRoad.status              = Status.UNDER_REVIEW;
             brokenRoad.assignedToOfficerId = 3;
             store.infraBox.addComplaint(brokenRoad);
 
-            // 2. Corruption — already ESCALATED, filed by priya, handled by officer2
+            // 2. Corruption(type=2) — ESCALATED, filed by priya, handled by officer2
+            // score = (2<<2)+5 = 13
             CorruptionComplaint briberyRTO = new CorruptionComplaint(
                 2, "Bribery at RTO Office",
                 "Officer demanding bribe for driving licence renewal at RTO office.",
                 2, 202, 5, LocalDateTime.now().minusDays(2));
-            briberyRTO.priorityScore       = briberyRTO.calculatePriorityScore(); // 5*3 = 15
+            briberyRTO.priorityScore       = PriorityCalculator.calculateScore(2, 5, 0); // 13
             briberyRTO.status              = Status.ESCALATED;
             briberyRTO.assignedToOfficerId = 4;
             store.corruptionBox.addComplaint(briberyRTO);
 
-            // 3. Noise — FILED, filed by ram, assigned to officer1
+            // 3. Noise(type=3) — FILED, filed by ram, assigned to officer1
+            // score = (3<<2)+2 = 14
             NoiseComplaint loudMusic = new NoiseComplaint(
                 3, "Loud Music at Night in Koregaon Park",
                 "Nightclub playing music past 11 PM every night causing disturbance.",
                 1, 303, 2, LocalDateTime.now().minusDays(1));
-            loudMusic.priorityScore       = loudMusic.calculatePriorityScore(); // 2*1 = 2
+            loudMusic.priorityScore       = PriorityCalculator.calculateScore(3, 2, 0); // 14
             loudMusic.assignedToOfficerId = 3;
             store.noiseBox.addComplaint(loudMusic);
 
-            // 4. Infrastructure — FILED, filed by priya, assigned to officer2
+            // 4. Infrastructure(type=1) — FILED, filed by priya, assigned to officer2
+            // score = (1<<2)+3 = 7
             InfrastructureComplaint brokenLight = new InfrastructureComplaint(
                 4, "Broken Street Light Near School",
                 "Street light outside St. Mary's School has been broken for two weeks.",
                 2, 101, 3, LocalDateTime.now().minusHours(5));
-            brokenLight.priorityScore       = brokenLight.calculatePriorityScore(); // 3*2 = 6
+            brokenLight.priorityScore       = PriorityCalculator.calculateScore(1, 3, 0); // 7
             brokenLight.assignedToOfficerId = 4;
             store.infraBox.addComplaint(brokenLight);
 
-            // 5. Corruption — RESOLVED, 35 days ago (used for ComplaintExpiredException demo)
+            // 5. Corruption(type=2) — RESOLVED, 35 days ago (ComplaintExpiredException demo)
+            // score = (2<<2)+5 = 13
             CorruptionComplaint fakeDocuments = new CorruptionComplaint(
                 5, "Fake Documents at Municipal Office",
                 "Clerk issuing fake NOCs for construction permits in exchange for cash.",
                 1, 202, 5, LocalDateTime.now().minusDays(35));
-            fakeDocuments.priorityScore       = fakeDocuments.calculatePriorityScore(); // 5*3 = 15
+            fakeDocuments.priorityScore       = PriorityCalculator.calculateScore(2, 5, 0); // 13
             fakeDocuments.status              = Status.RESOLVED;
             fakeDocuments.assignedToOfficerId = 3;
             store.corruptionBox.addComplaint(fakeDocuments);
 
-            // 6. Corruption — FILED, high urgency (auto-escalation demo for EscalationThread)
-            //    Score = 15, threshold = 14 → EscalationThread will escalate this within 10 seconds
-            CorruptionComplaint reliefFundBribery = new CorruptionComplaint(
-                6, "Bribery Blocking Flood Relief Funds",
-                "District officer diverting flood relief funds from affected villages.",
+            // 6. Electricity(type=7) — FILED, urgency=5 (auto-escalation demo for EscalationThread)
+            //    score = (7<<2)+5 = 33 > threshold(20) → EscalationThread escalates within 10 seconds
+            ElectricityComplaint powerOutage = new ElectricityComplaint(
+                6, "Complete Power Outage in Koregaon Park",
+                "Entire neighbourhood has had no electricity for 18 hours after transformer failure.",
                 2, 101, 5, LocalDateTime.now().minusMinutes(30));
-            reliefFundBribery.priorityScore = reliefFundBribery.calculatePriorityScore(); // 5*3 = 15
+            powerOutage.priorityScore = PriorityCalculator.calculateScore(7, 5, 0); // 33
             // Status stays FILED — EscalationThread will flip this to ESCALATED automatically
-            store.corruptionBox.addComplaint(reliefFundBribery);
+            store.electricityBox.addComplaint(powerOutage);
 
         } catch (DuplicateComplaintException loadException) {
             System.err.println("[DEMO DATA ERROR] " + loadException.getMessage());
@@ -294,9 +287,9 @@ public class Main {
     private static void testEscalationThread() {
         System.out.println("─── TEST 7: EscalationThread (auto-escalation) ───");
 
-        // Find complaint #6 — FILED, CorruptionComplaint urgency=5, score=15 (threshold=14)
-        CorruptionComplaint highPriorityComplaint = null;
-        for (CorruptionComplaint complaint : store.corruptionBox.getAllComplaints()) {
+        // Find complaint #6 — FILED, ElectricityComplaint urgency=5, score=33 (threshold=20)
+        ElectricityComplaint highPriorityComplaint = null;
+        for (ElectricityComplaint complaint : store.electricityBox.getAllComplaints()) {
             if (complaint.complaintId == 6) {
                 highPriorityComplaint = complaint;
                 break;
@@ -304,13 +297,13 @@ public class Main {
         }
 
         if (highPriorityComplaint == null) {
-            System.out.println("FAIL: Could not find complaint #6 in corruptionBox.");
+            System.out.println("FAIL: Could not find complaint #6 in electricityBox.");
             return;
         }
 
         System.out.println("  Complaint #6 status BEFORE scan: " + highPriorityComplaint.status);
-        System.out.println("  Priority score: " + highPriorityComplaint.calculatePriorityScore()
-                           + " (threshold=14, so this WILL auto-escalate)");
+        System.out.println("  Priority score: " + highPriorityComplaint.priorityScore
+                           + " (threshold=20, so this WILL auto-escalate)");
         System.out.println("  Waiting 12 seconds for EscalationThread scan cycle...");
 
         try { Thread.sleep(12000); } catch (InterruptedException ignored) {}
@@ -332,26 +325,26 @@ public class Main {
         boolean[] timeoutFired = { false };
 
         // Create with 10-second timeout — callback stands in for GUI logout navigation
-        store.sessionTimeoutThread = new SessionTimeoutThread(10,
+        SessionTimeoutThread testThread = new SessionTimeoutThread(10,
             () -> {
                 System.out.println("  [TIMEOUT CALLBACK] Session expired — user would be sent to login screen.");
                 timeoutFired[0] = true;
             });
-        store.sessionTimeoutThread.setDaemon(true);
-        store.sessionTimeoutThread.start();
+        testThread.setDaemon(true);
+        testThread.start();
 
         // Demo: try setting an invalid timeout — should be rejected and keep 10s
         System.out.println("  Trying invalid timeout (5s — below minimum of 10s):");
-        store.sessionTimeoutThread.setTimeoutSeconds(5);
+        testThread.setTimeoutSeconds(5);
 
         // Demo: try setting a valid new timeout
         System.out.println("  Setting valid timeout to 12s:");
-        store.sessionTimeoutThread.setTimeoutSeconds(12);
+        testThread.setTimeoutSeconds(12);
 
         // Demo: simulate user activity at 5 seconds — resets the idle clock
         System.out.println("  Waiting 5 seconds then simulating user activity...");
         try { Thread.sleep(5000); } catch (InterruptedException ignored) {}
-        store.sessionTimeoutThread.resetTimer(); // idle clock resets here
+        testThread.resetTimer(); // idle clock resets here
 
         // Now wait for the full 12-second idle period to elapse
         System.out.println("  No more activity. Waiting 13 seconds for timeout to fire...");

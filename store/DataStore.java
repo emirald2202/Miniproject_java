@@ -8,7 +8,6 @@ import users.*;
 import complaints.*;
 import containers.ComplaintBox;
 import threads.NotificationThread;
-import threads.SessionTimeoutThread;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -32,9 +31,6 @@ public class DataStore {
 
     // Reference to the running NotificationThread so dashboards can register bell callbacks
     public NotificationThread notificationThread;
-
-    // Reference to the active session timeout thread — replaced on every new login
-    public SessionTimeoutThread sessionTimeoutThread;
 
     private DataStore() {
         infraBox = new ComplaintBox<>();
