@@ -1,7 +1,7 @@
-// OOP CONCEPT : Exception Handling
-// ASSIGNMENT  : Custom Exceptions
-// PURPOSE     : Thrown when an operation is attempted on an archived or expired complaint.
-//               Enforces the system lifecycle rules — resolved/rejected complaints are immutable.
+
+
+
+
 
 package exceptions;
 

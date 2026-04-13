@@ -1,8 +1,8 @@
-#!/bin/bash
-# ── Mac / Linux Run Script ──────────────────────────────────────────
-# Uses lib_mac/ for JavaFX native libraries (macOS builds)
-# Run from project root: bash run.sh
-# ────────────────────────────────────────────────────────────────────
+
+
+
+
+
 
 LIB="lib_mac"
 

@@ -1,6 +1,6 @@
-// OOP CONCEPT : Generics + Encapsulation + Operators
-// ASSIGNMENT  : 5, 2, 1
-// PURPOSE     : Admin dashboard — typed tabs, citizen data access, officer assignment, XOR log panel.
+
+
+
 
 package gui;
 
@@ -46,7 +46,7 @@ public class AdminDashboard {
     private Button bellButton;
     private BaseComplaint selectedComplaint;
 
-    // Per-tab table data — each backed by its own typed ComplaintBox (Generics demo)
+    
     private ObservableList<BaseComplaint> infraData;
     private ObservableList<BaseComplaint> corruptionData;
     private ObservableList<BaseComplaint> noiseData;
@@ -60,7 +60,7 @@ public class AdminDashboard {
         this.sessionThread = sessionThread;
     }
 
-    // Builds and returns the full admin dashboard scene
+    
     public Scene buildScene() {
         BorderPane root = new BorderPane();
         root.setTop(buildTopBar());
@@ -74,7 +74,7 @@ public class AdminDashboard {
         return new Scene(root, 1100, 700);
     }
 
-    // Builds the top bar with admin label and bell
+    
     private HBox buildTopBar() {
         Label titleLabel = new Label("Admin Dashboard  —  " + admin.username
                                      + "  [Level " + admin.adminLevel + "]");
@@ -102,7 +102,7 @@ public class AdminDashboard {
         return topBar;
     }
 
-    // Builds the center panel with search bar and the 3-tab complaint view
+    
     private VBox buildCenterPanel() {
         VBox centerPanel = new VBox(8, buildSearchBar(), buildTabPane());
         centerPanel.setPadding(new Insets(10));
@@ -110,7 +110,7 @@ public class AdminDashboard {
         return centerPanel;
     }
 
-    // Builds the search bar — same pattern as OfficerDashboard
+    
     private HBox buildSearchBar() {
         ChoiceBox<String> searchTypeBox = new ChoiceBox<>();
         searchTypeBox.getItems().addAll("Search by ID", "Search by Name", "Search by Category");
@@ -129,7 +129,7 @@ public class AdminDashboard {
             refreshAllTabs();
         });
 
-        // Routes to correct ComplaintSearch overload based on dropdown
+        
         searchButton.setOnAction(e -> {
             sessionThread.resetTimer();
             String input = searchInputField.getText().trim();
@@ -159,7 +159,7 @@ public class AdminDashboard {
                 default -> results = new ArrayList<>();
             }
 
-            // Show results across all tabs by filtering each
+            
             infraData.setAll(results.stream().filter(c -> c instanceof InfrastructureComplaint).toList());
             corruptionData.setAll(results.stream().filter(c -> c instanceof CorruptionComplaint).toList());
             noiseData.setAll(results.stream().filter(c -> c instanceof NoiseComplaint).toList());
@@ -170,13 +170,13 @@ public class AdminDashboard {
         return searchBar;
     }
 
-    // Builds 3-tab pane — each tab backed by a separate typed ComplaintBox (Generics demo)
+    
     private TabPane buildTabPane() {
-        // GENERICS DEMO:
-        // infraData    ← store.infraBox.getAllComplaints()     ComplaintBox<InfrastructureComplaint>
-        // corruptionData ← store.corruptionBox.getAllComplaints() ComplaintBox<CorruptionComplaint>
-        // noiseData    ← store.noiseBox.getAllComplaints()     ComplaintBox<NoiseComplaint>
-        // Each box can only hold its declared type — enforced at compile time, not by if/else.
+        
+        
+        
+        
+        
 
         infraData      = FXCollections.observableArrayList();
         corruptionData = FXCollections.observableArrayList();
@@ -197,7 +197,7 @@ public class AdminDashboard {
         return tabPane;
     }
 
-    // Builds a TableView for one tab — columns include citizen name and assigned officer (admin can see all)
+    
     private TableView<BaseComplaint> buildTabTable(ObservableList<BaseComplaint> data) {
         TableView<BaseComplaint> table = new TableView<>(data);
         table.setPlaceholder(new Label("No complaints in this category."));
@@ -210,7 +210,7 @@ public class AdminDashboard {
         titleCol.setCellValueFactory(row -> new SimpleStringProperty(row.getValue().title));
         titleCol.setPrefWidth(180);
 
-        // Admin CAN see citizen username — resolves from DataStore by filedByUserId
+        
         TableColumn<BaseComplaint, String> citizenCol = new TableColumn<>("Citizen");
         citizenCol.setCellValueFactory(row -> {
             int userId = row.getValue().filedByUserId;
@@ -244,7 +244,7 @@ public class AdminDashboard {
 
         table.getColumns().addAll(idCol, titleCol, citizenCol, scoreCol, statusCol, officerCol);
 
-        // Track selected complaint for the action panel
+        
         table.getSelectionModel().selectedItemProperty().addListener((obs, old, newItem) -> {
             if (newItem != null) {
                 sessionThread.resetTimer();
@@ -256,7 +256,7 @@ public class AdminDashboard {
         return table;
     }
 
-    // Builds the right action panel — assign officer and view citizen details
+    
     private VBox buildActionPanel() {
         Label heading = new Label("Actions");
         heading.setFont(Font.font("System", FontWeight.BOLD, 14));
@@ -265,7 +265,7 @@ public class AdminDashboard {
         selectedComplaintLabel.setWrapText(true);
         selectedComplaintLabel.setMaxWidth(190);
 
-        // Officer assignment — field so it can be refreshed when new officers are added
+        
         officerChoiceBox = new ChoiceBox<>();
         officerChoiceBox.getItems().addAll(store.officers);
         officerChoiceBox.setConverter(new javafx.util.StringConverter<>() {
@@ -280,7 +280,7 @@ public class AdminDashboard {
             handleAssignOfficer(officerChoiceBox.getValue());
         });
 
-        // Citizen details — calls getVerifiedData(admin) via citizen.viewProfile(admin)
+        
         Button viewCitizenButton = new Button("View Citizen Details");
         viewCitizenButton.setStyle("-fx-background-color: #8e44ad; -fx-text-fill: white;");
         viewCitizenButton.setOnAction(e -> {
@@ -307,7 +307,7 @@ public class AdminDashboard {
     }
 
 
-    // Assigns the selected officer to the selected complaint — admin authority bypasses assignOfficer() validation
+    
     private void handleAssignOfficer(Officer selectedOfficer) {
         if (selectedComplaint == null) {
             showErrorAlert("Please select a complaint first.");
@@ -317,16 +317,16 @@ public class AdminDashboard {
             showErrorAlert("Please select an officer to assign.");
             return;
         }
-        // Admin directly sets the field — this is an administrative override, not a normal officer action
+        
         selectedComplaint.assignedToOfficerId = selectedOfficer.userId;
         selectedOfficer.assignedComplaints++;
 
-        // Notify the assigned officer
+        
         store.notificationQueue.offer("USERID:" + selectedOfficer.userId
             + "|MSG:You have been assigned complaint #" + selectedComplaint.complaintId
             + ": \"" + selectedComplaint.title + "\". Please review and take action.");
 
-        // Notify the citizen who filed the complaint
+        
         store.notificationQueue.offer("USERID:" + selectedComplaint.filedByUserId
             + "|MSG:Your complaint \"" + selectedComplaint.title
             + "\" has been assigned to an officer and is now being handled.");
@@ -336,7 +336,7 @@ public class AdminDashboard {
                            + " to " + selectedOfficer.username);
     }
 
-    // Finds the citizen who filed the selected complaint and shows their full profile in a modal window
+    
     private void handleViewCitizenDetails() {
         if (selectedComplaint == null) {
             showErrorAlert("Please select a complaint first.");
@@ -356,8 +356,8 @@ public class AdminDashboard {
             return;
         }
 
-        // ENCAPSULATION DEMO: getVerifiedData() is the ONLY way to read CitizenProfile fields.
-        // viewProfile() returns null if the requestor is not an Admin (UnauthorizedAccessException caught inside).
+        
+        
         String profileData = targetCitizen.viewProfile(admin);
 
         if (profileData == null) {
@@ -365,7 +365,7 @@ public class AdminDashboard {
             return;
         }
 
-        // Show in a proper modal window — not an Alert, per spec
+        
         Stage modal = new Stage();
         modal.initModality(Modality.APPLICATION_MODAL);
         modal.setTitle("Citizen Profile — Verified Data");
@@ -386,12 +386,12 @@ public class AdminDashboard {
         modal.showAndWait();
     }
 
-    // Builds the Manage Users tab — add officers, citizens, and admins at runtime
+    
     private ScrollPane buildManageUsersPane() {
         VBox pane = new VBox(20);
         pane.setPadding(new Insets(20));
 
-        // ── ADD OFFICER ───────────────────────────────────────────────────────
+        
         Label officerHeading = new Label("Add New Officer");
         officerHeading.setFont(Font.font("System", FontWeight.BOLD, 14));
 
@@ -417,7 +417,7 @@ public class AdminDashboard {
             showInfoAlert("Officer \"" + u + "\" added (ID=" + newId + ").");
         });
 
-        // ── ADD CITIZEN ───────────────────────────────────────────────────────
+        
         Label citizenHeading = new Label("Add New Citizen");
         citizenHeading.setFont(Font.font("System", FontWeight.BOLD, 14));
 
@@ -451,7 +451,7 @@ public class AdminDashboard {
             showInfoAlert("Citizen \"" + u + "\" registered (ID=" + newId + ").");
         });
 
-        // ── ADD ADMIN ─────────────────────────────────────────────────────────
+        
         Label adminHeading = new Label("Add New Admin");
         adminHeading.setFont(Font.font("System", FontWeight.BOLD, 14));
 
@@ -508,7 +508,7 @@ public class AdminDashboard {
         return scroll;
     }
 
-    // Generates the next unique user ID across all user lists
+    
     private int generateNextUserId() {
         int max = 0;
         for (Citizen c  : store.citizens) if (c.userId  > max) max = c.userId;
@@ -517,7 +517,7 @@ public class AdminDashboard {
         return max + 1;
     }
 
-    // Reloads each tab's data from its respective typed ComplaintBox
+    
     private void refreshAllTabs() {
         infraData.setAll(store.infraBox.getAllComplaints());
         corruptionData.setAll(store.corruptionBox.getAllComplaints());
@@ -525,13 +525,13 @@ public class AdminDashboard {
     }
 
 
-    // Updates bell button with current unread notification count
+    
     private void updateBellCount() {
         int count = store.userNotifications.getOrDefault(admin.userId, List.of()).size();
         bellButton.setText("🔔 " + count);
     }
 
-    // Shows notifications popup for admin
+    
     private void showNotificationsPopup() {
         List<String> messages = store.userNotifications.getOrDefault(admin.userId, List.of());
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
@@ -541,14 +541,14 @@ public class AdminDashboard {
         alert.showAndWait();
     }
 
-    // Deregisters callback, stops session, returns to login
+    
     private void handleLogout() {
         store.notificationThread.deregisterCallback(admin.userId);
         sessionThread.stopThread();
         stage.setScene(new LoginScreen(stage).buildScene());
     }
 
-    // Prints to console AND shows JavaFX ERROR Alert — Rule 7
+    
     private void showErrorAlert(String message) {
         System.err.println("[ADMIN ERROR] " + message);
         Alert alert = new Alert(Alert.AlertType.ERROR);
@@ -557,7 +557,7 @@ public class AdminDashboard {
         alert.showAndWait();
     }
 
-    // Shows a success confirmation dialog
+    
     private void showInfoAlert(String message) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Success");

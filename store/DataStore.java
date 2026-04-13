@@ -1,6 +1,6 @@
-// OOP CONCEPT : Singleton Pattern
-// ASSIGNMENT  : N/A
-// PURPOSE     : A global single instance holding all runtime data in memory.
+
+
+
 
 package store;
 
@@ -29,7 +29,7 @@ public class DataStore {
     public ConcurrentLinkedQueue<String> notificationQueue = new ConcurrentLinkedQueue<>();
     public HashMap<Integer, List<String>> userNotifications = new HashMap<>();
 
-    // Reference to the running NotificationThread so dashboards can register bell callbacks
+    
     public NotificationThread notificationThread;
 
     private DataStore() {

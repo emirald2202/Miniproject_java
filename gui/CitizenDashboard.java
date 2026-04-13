@@ -1,6 +1,6 @@
-// OOP CONCEPT : Generics
-// ASSIGNMENT  : 5
-// PURPOSE     : Citizen dashboard — files complaints into typed boxes and shows own complaint history.
+
+
+
 
 package gui;
 
@@ -48,14 +48,14 @@ public class CitizenDashboard {
         this.sessionThread = sessionThread;
     }
 
-    // Builds and returns the full citizen dashboard scene
+    
     public Scene buildScene() {
         BorderPane root = new BorderPane();
         root.setTop(buildTopBar());
         root.setLeft(buildComplaintList());
         root.setCenter(buildFilingForm());
 
-        // Register bell notification callback — fires when NotificationThread delivers a message
+        
         store.notificationThread.registerCallback(citizen.userId,
             () -> Platform.runLater(() -> { updateBellCount(); refreshComplaintList(); }));
 
@@ -63,7 +63,7 @@ public class CitizenDashboard {
         return new Scene(root, 900, 650);
     }
 
-    // Builds the top bar with app title and notification bell
+    
     private HBox buildTopBar() {
         Label titleLabel = new Label("Civilian Complaint Portal  —  Welcome, " + citizen.username);
         titleLabel.setFont(Font.font("System", FontWeight.BOLD, 16));
@@ -89,7 +89,7 @@ public class CitizenDashboard {
         return topBar;
     }
 
-    // Builds the left panel showing the citizen's own complaint history with colored status badges
+    
     private VBox buildComplaintList() {
         Label heading = new Label("My Complaints");
         heading.setFont(Font.font("System", FontWeight.BOLD, 14));
@@ -98,7 +98,7 @@ public class CitizenDashboard {
         complaintListView = new ListView<>();
         complaintListView.setPrefWidth(240);
 
-        // Color each cell based on its status
+        
         complaintListView.setCellFactory(listView -> new ListCell<>() {
             @Override
             protected void updateItem(String item, boolean empty) {
@@ -118,7 +118,7 @@ public class CitizenDashboard {
             }
         });
 
-        // Show detail popup when a complaint row is selected
+        
         complaintListView.getSelectionModel().selectedIndexProperty().addListener(
             (obs, oldIdx, newIdx) -> {
                 int idx = newIdx.intValue();
@@ -133,7 +133,7 @@ public class CitizenDashboard {
         return leftPanel;
     }
 
-    // Builds the center complaint filing form
+    
     private ScrollPane buildFilingForm() {
         Label formHeading = new Label("File a New Complaint");
         formHeading.setFont(Font.font("System", FontWeight.BOLD, 16));
@@ -152,7 +152,7 @@ public class CitizenDashboard {
 
         TextField areaCodeField     = new TextField();
         areaCodeField.setPromptText("Numeric area code (e.g. 101)");
-        // Reject non-digit input
+        
         areaCodeField.textProperty().addListener((obs, oldVal, newVal) -> {
             if (!newVal.matches("\\d*")) areaCodeField.setText(oldVal);
         });
@@ -171,7 +171,7 @@ public class CitizenDashboard {
         submitButton.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold;");
         submitButton.setPrefWidth(180);
 
-        // Live priority score update as slider moves
+        
         urgencySlider.valueProperty().addListener((obs, oldVal, newVal) -> {
             sessionThread.resetTimer();
             int areaCode = areaCodeField.getText().isEmpty() ? 0 : Integer.parseInt(areaCodeField.getText());
@@ -180,7 +180,7 @@ public class CitizenDashboard {
             priorityScoreLabel.setText("Priority Score: " + score);
         });
 
-        // Also update score when category changes
+        
         categoryChoiceBox.valueProperty().addListener((obs, oldVal, newVal) -> {
             sessionThread.resetTimer();
             int areaCode = areaCodeField.getText().isEmpty() ? 0 : Integer.parseInt(areaCodeField.getText());
@@ -194,7 +194,7 @@ public class CitizenDashboard {
             handleSubmit(titleField, descriptionArea, categoryChoiceBox, areaCodeField, urgencySlider, priorityScoreLabel);
         });
 
-        // Form layout
+        
         GridPane form = new GridPane();
         form.setHgap(12);
         form.setVgap(12);
@@ -219,7 +219,7 @@ public class CitizenDashboard {
         return scrollPane;
     }
 
-    // Validates fields and submits the complaint to the correct typed ComplaintBox
+    
     private void handleSubmit(TextField titleField, TextArea descArea,
                                ChoiceBox<ComplaintCategory> categoryBox,
                                TextField areaCodeField, Slider urgencySlider,
@@ -241,13 +241,13 @@ public class CitizenDashboard {
 
         BaseComplaint newComplaint = createComplaint(newId, title, description, areaCode, urgencyLevel, category);
         newComplaint.priorityScore = score;
-        // New complaints always start as FILED — EscalationThread handles auto-escalation later
+        
         newComplaint.status = Status.FILED;
 
         try {
             addToCorrectBox(newComplaint, category);
 
-            // Notify all admins that a new complaint has been filed
+            
             for (Admin admin : store.admins) {
                 store.notificationQueue.offer("USERID:" + admin.userId
                     + "|MSG:New complaint filed by " + citizen.username
@@ -262,7 +262,7 @@ public class CitizenDashboard {
         }
     }
 
-    // Instantiates the correct complaint subclass based on the selected category
+    
     private BaseComplaint createComplaint(int id, String title, String desc, int areaCode, int urgency, ComplaintCategory category) {
         LocalDateTime now = LocalDateTime.now();
         return switch (category) {
@@ -276,7 +276,7 @@ public class CitizenDashboard {
         };
     }
 
-    // Routes the complaint to the correct typed box — type safety enforced by generics at compile time
+    
     @SuppressWarnings("unchecked")
     private void addToCorrectBox(BaseComplaint complaint, ComplaintCategory category)
             throws DuplicateComplaintException {
@@ -291,19 +291,19 @@ public class CitizenDashboard {
         }
     }
 
-    // Refreshes the left panel list and the parallel ownComplaints list used for detail lookup
+    
     private void refreshComplaintList() {
         ownComplaints = getAllOwnComplaints();
         List<String> items = new ArrayList<>();
         for (BaseComplaint c : ownComplaints) {
             items.add("[" + c.status + "] " + c.title);
         }
-        // Use setAll() to update in-place — avoids JavaFX 17 IndexOutOfBoundsException
-        // that occurs when replacing the entire items list while a selection is active
+        
+        
         complaintListView.getItems().setAll(items);
     }
 
-    // Collects all complaints filed by this citizen from every box
+    
     private List<BaseComplaint> getAllOwnComplaints() {
         List<BaseComplaint> own = new ArrayList<>();
         List<BaseComplaint> all = new ArrayList<>();
@@ -320,13 +320,13 @@ public class CitizenDashboard {
         return own;
     }
 
-    // Updates the bell button text with the current unread notification count
+    
     private void updateBellCount() {
         int count = store.userNotifications.getOrDefault(citizen.userId, List.of()).size();
         bellButton.setText("🔔 " + count);
     }
 
-    // Shows a popup listing all notifications for this citizen
+    
     private void showNotificationsPopup() {
         List<String> messages = store.userNotifications.getOrDefault(citizen.userId, List.of());
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
@@ -336,7 +336,7 @@ public class CitizenDashboard {
         alert.showAndWait();
     }
 
-    // Maps ComplaintCategory enum to the integer type used by PriorityCalculator
+    
     private int categoryToInt(ComplaintCategory category) {
         return switch (category) {
             case INFRASTRUCTURE -> PriorityCalculator.TYPE_INFRASTRUCTURE;
@@ -349,7 +349,7 @@ public class CitizenDashboard {
         };
     }
 
-    // Finds the next available complaint ID by scanning the max ID across all boxes
+    
     private int generateNextComplaintId() {
         int maxId = 0;
         List<BaseComplaint> all = new ArrayList<>();
@@ -366,7 +366,7 @@ public class CitizenDashboard {
         return maxId + 1;
     }
 
-    // Shows a modal popup with full details for the selected complaint
+    
     private void showComplaintDetailPopup(BaseComplaint complaint) {
         Stage modal = new Stage();
         modal.initModality(javafx.stage.Modality.APPLICATION_MODAL);
@@ -408,7 +408,7 @@ public class CitizenDashboard {
         complaintListView.getSelectionModel().clearSelection();
     }
 
-    // Clears all filing form fields back to their defaults
+    
     private void clearForm(TextField titleField, TextArea descArea,
                             TextField areaCodeField, Slider urgencySlider,
                             Label priorityScoreLabel) {
@@ -419,14 +419,14 @@ public class CitizenDashboard {
         priorityScoreLabel.setText("Priority Score: —");
     }
 
-    // Deregisters callback and stops session thread, then returns to login
+    
     private void handleLogout() {
         store.notificationThread.deregisterCallback(citizen.userId);
         sessionThread.stopThread();
         stage.setScene(new LoginScreen(stage).buildScene());
     }
 
-    // Prints to console and shows a JavaFX ERROR alert dialog — Rule 7
+    
     private void showErrorAlert(String message) {
         System.err.println("[CITIZEN ERROR] " + message);
         Alert alert = new Alert(Alert.AlertType.ERROR);
@@ -435,7 +435,7 @@ public class CitizenDashboard {
         alert.showAndWait();
     }
 
-    // Shows a success confirmation dialog
+    
     private void showSuccessAlert(String message) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Success");

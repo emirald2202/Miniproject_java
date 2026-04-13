@@ -1,6 +1,6 @@
-// OOP CONCEPT : Multithreading
-// ASSIGNMENT  : 7
-// PURPOSE     : Background thread that auto-escalates high-priority complaints without human intervention.
+
+
+
 
 package threads;
 
@@ -16,16 +16,16 @@ public class EscalationThread extends Thread {
     private volatile boolean running = true;
     private final DataStore store = DataStore.getInstance();
 
-    // Score above which a complaint is automatically escalated
-    // PriorityCalculator scores range 5–33 (complaintType<<2 + urgency).
-    // Threshold 20 catches Water/Electricity/Sanitation/Traffic at urgency 5,
-    // and Water/Electricity at any urgency.
+    
+    
+    
+    
     private static final int ESCALATION_THRESHOLD = 20;
 
-    // How often the thread scans all complaints (in milliseconds)
+    
     private static final int SCAN_INTERVAL_MS = 10000;
 
-    // Collects all complaints from every ComplaintBox in DataStore into one list
+    
     private List<BaseComplaint> collectAllComplaints() {
         List<BaseComplaint> allComplaints = new ArrayList<>();
         allComplaints.addAll(store.infraBox.getAllComplaints());
@@ -38,7 +38,7 @@ public class EscalationThread extends Thread {
         return allComplaints;
     }
 
-    // Scans every active complaint and escalates those whose priority score exceeds the threshold
+    
     @Override
     public void run() {
         System.out.println("[EscalationThread] Started — scanning every "
@@ -52,7 +52,7 @@ public class EscalationThread extends Thread {
                                    || complaint.status == Status.UNDER_REVIEW;
 
                 if (isActive) {
-                    // Use the stored priorityScore (set by PriorityCalculator when filed)
+                    
                     int priorityScore = complaint.priorityScore;
 
                     if (priorityScore > ESCALATION_THRESHOLD) {
@@ -61,7 +61,7 @@ public class EscalationThread extends Thread {
                                            + complaint.complaintId
                                            + " (score=" + priorityScore + ")");
 
-                        // Push notification so the citizen is informed via NotificationThread
+                        
                         String notification = "USERID:" + complaint.filedByUserId
                                 + "|MSG:Your complaint \""
                                 + complaint.title
@@ -72,7 +72,7 @@ public class EscalationThread extends Thread {
             }
 
             try {
-                // Sleep between scans to avoid burning CPU
+                
                 Thread.sleep(SCAN_INTERVAL_MS);
             } catch (InterruptedException interruptedException) {
                 System.out.println("[EscalationThread] Interrupted — stopping.");
@@ -83,7 +83,7 @@ public class EscalationThread extends Thread {
         System.out.println("[EscalationThread] Stopped.");
     }
 
-    // Signals the thread to exit its loop cleanly on next iteration
+    
     public void stopThread() {
         running = false;
     }

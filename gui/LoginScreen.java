@@ -1,6 +1,6 @@
-// OOP CONCEPT : Inheritance & Polymorphism
-// ASSIGNMENT  : 4
-// PURPOSE     : Login screen that stores the authenticated user as BaseUser and routes by role.
+
+
+
 
 package gui;
 
@@ -32,7 +32,7 @@ public class LoginScreen {
         this.primaryStage = primaryStage;
     }
 
-    // Builds and returns the login scene — called by MainApp and by logout handlers in dashboards
+    
     public Scene buildScene() {
         GridPane grid = new GridPane();
         grid.setAlignment(Pos.CENTER);
@@ -40,20 +40,20 @@ public class LoginScreen {
         grid.setVgap(14);
         grid.setPadding(new Insets(40));
 
-        // Title
+        
         Label titleLabel = new Label("Civilian Complaint Portal");
         titleLabel.setFont(Font.font("System", FontWeight.BOLD, 22));
         GridPane.setColumnSpan(titleLabel, 2);
         GridPane.setHalignment(titleLabel, HPos.CENTER);
 
-        // Fields
+        
         TextField     usernameField  = new TextField();
         PasswordField passwordField  = new PasswordField();
         ChoiceBox<Role> roleChoiceBox = new ChoiceBox<>();
         roleChoiceBox.getItems().addAll(Role.values());
         roleChoiceBox.setValue(Role.CITIZEN);
 
-        // Error label — hidden until a failed login attempt
+        
         Label errorLabel = new Label();
         errorLabel.setTextFill(Color.RED);
         errorLabel.setVisible(false);
@@ -64,7 +64,7 @@ public class LoginScreen {
         loginButton.setDefaultButton(true);
         loginButton.setPrefWidth(120);
 
-        // Opens a second independent login window sharing the same DataStore
+        
         Button newWindowButton = new Button("New Window");
         newWindowButton.setOnAction(e -> {
             Stage newStage = new Stage();
@@ -75,20 +75,20 @@ public class LoginScreen {
             newStage.show();
         });
 
-        // Success label — shown after successful registration
+        
         Label successLabel = new Label();
         successLabel.setTextFill(Color.GREEN);
         successLabel.setVisible(false);
         GridPane.setColumnSpan(successLabel, 2);
         GridPane.setHalignment(successLabel, HPos.CENTER);
 
-        // Register button — opens citizen self-registration modal
+        
         Button registerButton = new Button("New? Register as Citizen");
         registerButton.setOnAction(e -> showRegistrationForm(successLabel));
         GridPane.setColumnSpan(registerButton, 2);
         GridPane.setHalignment(registerButton, HPos.CENTER);
 
-        // Layout
+        
         grid.add(titleLabel,                     0, 0);
         grid.add(new Label("Username:"),         0, 1);
         grid.add(usernameField,                  1, 1);
@@ -102,7 +102,7 @@ public class LoginScreen {
         grid.add(registerButton,                 0, 6);
         grid.add(successLabel,                   0, 7);
 
-        // Login button handler — authenticates and routes to the correct dashboard
+        
         loginButton.setOnAction(event -> handleLogin(
             usernameField.getText().trim(),
             passwordField.getText(),
@@ -113,22 +113,22 @@ public class LoginScreen {
         return new Scene(grid, 900, 650);
     }
 
-    // Iterates the correct user list, calls login(), and opens the matching dashboard
+    
     private void handleLogin(String username, String password, Role selectedRole, Label errorLabel) {
         BaseUser matchedUser = findUser(username, password, selectedRole);
 
         if (matchedUser == null) {
-            // Rule: inline error label only — never a popup for login failures
+            
             errorLabel.setText("Invalid credentials or wrong role selected.");
             errorLabel.setVisible(true);
             return;
         }
 
-        // POLYMORPHISM DEMO — called on BaseUser reference, dispatches to correct subclass at runtime
+        
         matchedUser.performAction();
 
-        // Start a per-window session timeout thread — 300 second idle limit
-        // Each window gets its own independent thread so windows don't interfere with each other
+        
+        
         SessionTimeoutThread sessionThread = new SessionTimeoutThread(300,
             () -> javafx.application.Platform.runLater(() -> {
                 primaryStage.setScene(buildScene());
@@ -141,7 +141,7 @@ public class LoginScreen {
         openDashboard(matchedUser, sessionThread);
     }
 
-    // Searches the correct list based on selected role and validates credentials
+    
     private BaseUser findUser(String username, String password, Role selectedRole) {
         switch (selectedRole) {
             case CITIZEN -> {
@@ -163,7 +163,7 @@ public class LoginScreen {
         return null;
     }
 
-    // Opens a modal registration form — citizens only; officers/admins must be created by admin
+    
     private void showRegistrationForm(Label successLabel) {
         Stage modal = new Stage();
         modal.initModality(Modality.APPLICATION_MODAL);
@@ -213,18 +213,18 @@ public class LoginScreen {
             String phone    = phoneField.getText().trim();
             String address  = addressField.getText().trim();
 
-            // Validate all fields filled
+            
             if (username.isEmpty() || password.isEmpty() || confirm.isEmpty()
                     || fullName.isEmpty() || aadhaar.isEmpty() || phone.isEmpty() || address.isEmpty()) {
                 formError.setText("All fields are required.");
                 return;
             }
-            // Validate passwords match
+            
             if (!password.equals(confirm)) {
                 formError.setText("Passwords do not match.");
                 return;
             }
-            // Validate username not already taken
+            
             for (Citizen existing : store.citizens) {
                 if (existing.username.equalsIgnoreCase(username)) {
                     formError.setText("Username \"" + username + "\" is already taken.");
@@ -232,7 +232,7 @@ public class LoginScreen {
                 }
             }
 
-            // Create account
+            
             int newId = generateNextUserId();
             CitizenProfile profile = new CitizenProfile(fullName, aadhaar, phone, address);
             Citizen newCitizen = new Citizen(newId, username, password, profile);
@@ -247,7 +247,7 @@ public class LoginScreen {
         modal.showAndWait();
     }
 
-    // Generates the next unique user ID across all user lists
+    
     private int generateNextUserId() {
         int max = 0;
         for (Citizen c  : store.citizens) if (c.userId  > max) max = c.userId;
@@ -256,7 +256,7 @@ public class LoginScreen {
         return max + 1;
     }
 
-    // Routes the authenticated user to their role-specific dashboard, passing the per-window session thread
+    
     private void openDashboard(BaseUser loggedInUser, SessionTimeoutThread sessionThread) {
         switch (loggedInUser.role) {
             case CITIZEN -> primaryStage.setScene(

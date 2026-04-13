@@ -1,6 +1,6 @@
-// OOP CONCEPT : Encapsulation & Data Hiding
-// ASSIGNMENT  : 2
-// PURPOSE     : Private fields with no public getters making data unreachable without permission.
+
+
+
 
 package profile;
 
@@ -20,7 +20,7 @@ public class CitizenProfile {
         this.homeAddress = homeAddress;
     }
 
-    // Returns formatted citizen profile details to authorized admins
+    
     public String getVerifiedData(Admin requestor) throws UnauthorizedAccessException {
         if (requestor == null) {
             throw new UnauthorizedAccessException("Only Admin can access citizen profile data.");

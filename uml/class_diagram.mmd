@@ -1,5 +1,5 @@
 classDiagram
-    %% ─── ENUMS ───────────────────────────────────────────────────────────────
+    
     class Role {
         <<enumeration>>
         CITIZEN
@@ -37,7 +37,7 @@ classDiagram
         ELECTRICITY
     }
 
-    %% ─── USER HIERARCHY ──────────────────────────────────────────────────────
+    
     class BaseUser {
         <<abstract>>
         +int userId
@@ -75,7 +75,7 @@ classDiagram
     Officer --> OfficerDepartment : uses
     BaseUser --> Role : uses
 
-    %% ─── PROFILE ─────────────────────────────────────────────────────────────
+    
     class CitizenProfile {
         -String aadhaarNumber
         -String phoneNumber
@@ -86,7 +86,7 @@ classDiagram
 
     CitizenProfile ..> Admin : depends on
 
-    %% ─── COMPLAINT HIERARCHY ─────────────────────────────────────────────────
+    
     class BaseComplaint {
         <<abstract>>
         +int complaintId
@@ -122,7 +122,7 @@ classDiagram
     BaseComplaint <|-- ElectricityComplaint
     BaseComplaint --> Status : uses
 
-    %% ─── GENERIC CONTAINER ───────────────────────────────────────────────────
+    
     class ComplaintBox~T~ {
         -List~T~ complaints
         +addComplaint(T) void
@@ -134,7 +134,7 @@ classDiagram
 
     ComplaintBox --> BaseComplaint : T extends
 
-    %% ─── DATA STORE (SINGLETON) ──────────────────────────────────────────────
+    
     class DataStore {
         -static DataStore instance
         +List~Citizen~ citizens
@@ -159,7 +159,7 @@ classDiagram
     DataStore --> Admin : stores
     DataStore --> NotificationThread : holds ref
 
-    %% ─── THREADS ─────────────────────────────────────────────────────────────
+    
     class NotificationThread {
         -volatile boolean running
         -HashMap~Integer,Runnable~ activeCallbacks
@@ -190,7 +190,7 @@ classDiagram
     EscalationThread --> DataStore : reads from
     NotificationThread --> DataStore : reads/writes
 
-    %% ─── UTILITY CLASSES ─────────────────────────────────────────────────────
+    
     class PriorityCalculator {
         +calculateScore(int,int,int)$ int
         +autoAssignStatus(int)$ Status

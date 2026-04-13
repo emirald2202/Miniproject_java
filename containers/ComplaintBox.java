@@ -1,7 +1,7 @@
-// OOP CONCEPT : Generics
-// ASSIGNMENT  : 5
-// PURPOSE     : A generic container that holds complaints of a specific type.
-//               Enforces duplicate-check and lookup rules via custom exceptions.
+
+
+
+
 
 package containers;
 
@@ -23,7 +23,7 @@ public class ComplaintBox<T extends BaseComplaint> {
         this.complaints = new ArrayList<>();
     }
 
-    // Adds a complaint to the box after checking for duplicates within 24 hours
+    
     public void addComplaint(T complaint) throws DuplicateComplaintException {
         try {
             for (T existing : complaints) {
@@ -47,7 +47,7 @@ public class ComplaintBox<T extends BaseComplaint> {
         }
     }
 
-    // Retrieves a complaint by its ID, throws if not found
+    
     public T getComplaintById(int complaintId) throws ComplaintNotFoundException {
         try {
             for (T complaint : complaints) {
@@ -65,12 +65,12 @@ public class ComplaintBox<T extends BaseComplaint> {
         }
     }
 
-    // Returns all complaints in the box
+    
     public List<T> getAllComplaints() {
         return complaints;
     }
 
-    // Removes a complaint by ID; blocks removal if complaint is resolved and older than 30 days
+    
     public void remove(int complaintId) throws ComplaintNotFoundException, ComplaintExpiredException {
         T found = getComplaintById(complaintId);
 
@@ -86,14 +86,14 @@ public class ComplaintBox<T extends BaseComplaint> {
         System.out.println("Complaint #" + complaintId + " removed successfully.");
     }
 
-    // Returns all complaints sorted by priority score descending (highest priority first)
+    
     public List<T> getByPriority() {
         List<T> sorted = new ArrayList<>(complaints);
         sorted.sort(Comparator.comparingInt((T c) -> c.priorityScore).reversed());
         return sorted;
     }
 
-    // Returns the number of complaints in the box
+    
     public int size() {
         return complaints.size();
     }

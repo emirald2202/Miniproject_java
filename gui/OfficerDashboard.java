@@ -1,9 +1,9 @@
-// OOP CONCEPT : Encapsulation & Data Hiding
-// ASSIGNMENT  : 2
-// PURPOSE     : Officer dashboard — NO CitizenProfile import; citizen data is permanently blocked.
 
-// ENCAPSULATION PROOF: Search this entire file for "CitizenProfile" — it does not appear.
-// The red PROTECTED label below is the only thing an officer ever sees about a complainant's identity.
+
+
+
+
+
 
 package gui;
 
@@ -47,7 +47,7 @@ public class OfficerDashboard {
     private TableView<BaseComplaint> complaintTable;
     private ObservableList<BaseComplaint> tableData;
 
-    // Detail panel labels — populated on row selection
+    
     private Label detailTitleLabel;
     private Label detailDescLabel;
     private Label detailDateLabel;
@@ -60,7 +60,7 @@ public class OfficerDashboard {
         this.sessionThread = sessionThread;
     }
 
-    // Builds and returns the full officer dashboard scene
+    
     public Scene buildScene() {
         BorderPane root = new BorderPane();
         root.setTop(buildTopBar());
@@ -74,7 +74,7 @@ public class OfficerDashboard {
         return new Scene(root, 1000, 650);
     }
 
-    // Builds the top bar with officer name and notification bell
+    
     private HBox buildTopBar() {
         Label titleLabel = new Label("Officer Dashboard  —  " + officer.username
                                      + "  [" + officer.department + "]");
@@ -102,14 +102,14 @@ public class OfficerDashboard {
         return topBar;
     }
 
-    // Builds the center panel — search bar above the complaints table
+    
     private VBox buildCenterPanel() {
         VBox centerPanel = new VBox(10, buildSearchBar(), buildTable());
         centerPanel.setPadding(new Insets(10));
         return centerPanel;
     }
 
-    // Builds the search bar with type dropdown, input field, and search button
+    
     private HBox buildSearchBar() {
         ChoiceBox<String> searchTypeBox = new ChoiceBox<>();
         searchTypeBox.getItems().addAll("Search by ID", "Search by Name", "Search by Category");
@@ -128,7 +128,7 @@ public class OfficerDashboard {
             loadAllComplaints();
         });
 
-        // Delegates to the correct ComplaintSearch overload based on dropdown selection
+        
         searchButton.setOnAction(e -> {
             sessionThread.resetTimer();
             String input = searchInputField.getText().trim();
@@ -166,7 +166,7 @@ public class OfficerDashboard {
         return searchBar;
     }
 
-    // Builds the complaints TableView — NO citizen name or contact columns
+    
     private TableView<BaseComplaint> buildTable() {
         complaintTable = new TableView<>();
         tableData      = FXCollections.observableArrayList();
@@ -196,7 +196,7 @@ public class OfficerDashboard {
 
         complaintTable.getColumns().addAll(idCol, titleCol, categoryCol, scoreCol, statusCol);
 
-        // Populate detail panel on row selection
+        
         complaintTable.getSelectionModel().selectedItemProperty().addListener(
             (obs, oldComplaint, newComplaint) -> {
                 if (newComplaint != null) {
@@ -208,7 +208,7 @@ public class OfficerDashboard {
         return complaintTable;
     }
 
-    // Builds the right-side detail panel — strictly no citizen identity data exposed
+    
     private VBox buildDetailPanel() {
         Label heading = new Label("Complaint Details");
         heading.setFont(Font.font("System", FontWeight.BOLD, 14));
@@ -223,8 +223,8 @@ public class OfficerDashboard {
 
         detailDateLabel  = new Label("—");
 
-        // ENCAPSULATION DEMO: The label below always shows PROTECTED — officer can never see citizen details.
-        // There is no CitizenProfile import in this file. No code path leads to that data.
+        
+        
         Label citizenIdLabel = new Label("Citizen #—");
         Label protectedLabel = new Label("PROTECTED — Unauthorized Access");
         protectedLabel.setTextFill(Color.RED);
@@ -261,20 +261,20 @@ public class OfficerDashboard {
         return detailPanel;
     }
 
-    // Fills the detail panel fields with the selected complaint's data
+    
     private void populateDetailPanel(BaseComplaint complaint) {
         selectedComplaint = complaint;
         detailTitleLabel.setText(complaint.title);
         detailDescLabel.setText(complaint.description);
         detailDateLabel.setText(complaint.filedDate.toLocalDate().toString());
-        // Show only the numeric ID — never a name, phone, or Aadhaar
+        
         detailTitleLabel.getParent().getChildrenUnmodifiable().stream()
             .filter(node -> node instanceof Label && ((Label) node).getText().startsWith("Citizen #"))
             .findFirst()
             .ifPresent(node -> ((Label) node).setText("Citizen #" + complaint.filedByUserId));
     }
 
-    // Attempts to update the selected complaint's status and pushes a notification to the queue
+    
     private void handleStatusUpdate() {
         if (selectedComplaint == null) {
             showErrorAlert("Please select a complaint from the table first.");
@@ -285,12 +285,12 @@ public class OfficerDashboard {
         try {
             selectedComplaint.updateStatus(chosenStatus);
 
-            // Notify the citizen who filed the complaint
+            
             String citizenMsg = buildNotificationMessage(selectedComplaint, chosenStatus);
             store.notificationQueue.offer(
                 "USERID:" + selectedComplaint.filedByUserId + "|MSG:" + citizenMsg);
 
-            // Notify all admins about the status change
+            
             String adminMsg = "Complaint #" + selectedComplaint.complaintId
                 + " \"" + selectedComplaint.title + "\" updated to " + chosenStatus
                 + " by officer " + officer.username + ".";
@@ -298,7 +298,7 @@ public class OfficerDashboard {
                 store.notificationQueue.offer("USERID:" + admin.userId + "|MSG:" + adminMsg);
             }
 
-            // If assigned to a different officer, notify them too (e.g. escalation by senior officer)
+            
             int assignedId = selectedComplaint.assignedToOfficerId;
             if (assignedId != -1 && assignedId != officer.userId) {
                 store.notificationQueue.offer("USERID:" + assignedId + "|MSG:Complaint #"
@@ -317,7 +317,7 @@ public class OfficerDashboard {
         }
     }
 
-    // Builds the user-friendly notification message for a given status transition
+    
     private String buildNotificationMessage(BaseComplaint complaint, Status newStatus) {
         return switch (newStatus) {
             case RESOLVED     -> "Your complaint \"" + complaint.title + "\" has been resolved. Thank you for reporting.";
@@ -327,7 +327,7 @@ public class OfficerDashboard {
         };
     }
 
-    // Loads all complaints from all 7 boxes into the table
+    
     private void loadAllComplaints() {
         List<BaseComplaint> all = new ArrayList<>();
         all.addAll(store.infraBox.getAllComplaints());
@@ -340,13 +340,13 @@ public class OfficerDashboard {
         tableData.setAll(all);
     }
 
-    // Updates the bell button with the current unread notification count
+    
     private void updateBellCount() {
         int count = store.userNotifications.getOrDefault(officer.userId, List.of()).size();
         bellButton.setText("🔔 " + count);
     }
 
-    // Shows all notifications for this officer in a popup
+    
     private void showNotificationsPopup() {
         List<String> messages = store.userNotifications.getOrDefault(officer.userId, List.of());
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
@@ -356,14 +356,14 @@ public class OfficerDashboard {
         alert.showAndWait();
     }
 
-    // Deregisters callback and stops session thread, then returns to login
+    
     private void handleLogout() {
         store.notificationThread.deregisterCallback(officer.userId);
         sessionThread.stopThread();
         stage.setScene(new LoginScreen(stage).buildScene());
     }
 
-    // Prints to console AND shows JavaFX ERROR Alert — Rule 7
+    
     private void showErrorAlert(String message) {
         System.err.println("[OFFICER ERROR] " + message);
         Alert alert = new Alert(Alert.AlertType.ERROR);

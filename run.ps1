@@ -1,7 +1,7 @@
-# ── Windows Run Script ──────────────────────────────────────────────
-# Uses lib_win\ for JavaFX native libraries (Windows builds)
-# Run from project root: .\run.ps1
-# ────────────────────────────────────────────────────────────────────
+
+
+
+
 
 $LIB = "lib_win"
 
