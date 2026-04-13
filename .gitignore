@@ -1,2 +1,9 @@
 # Compiled Java class files
 *.class
+
+
+
+
+
+# Old single lib/ folder (deprecated)
+lib/

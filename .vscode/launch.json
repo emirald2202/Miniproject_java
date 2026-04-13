@@ -1,0 +1,30 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Main",
+            "request": "launch",
+            "mainClass": "Main",
+            "projectName": "Miniproject_java_7762f7a9"
+        },
+        {
+            "type": "java",
+            "name": "Run (Windows) — lib_win",
+            "request": "launch",
+            "mainClass": "Main",
+            "projectName": "Miniproject_java_1ef80a7",
+            "vmArgs": "--module-path lib_win --add-modules javafx.controls,javafx.fxml",
+            "console": "integratedTerminal"
+        },
+        {
+            "type": "java",
+            "name": "Run (Mac/Linux) — lib_mac",
+            "request": "launch",
+            "mainClass": "Main",
+            "projectName": "Miniproject_java_1ef80a7",
+            "vmArgs": "--module-path lib_mac --add-modules javafx.controls,javafx.fxml",
+            "console": "integratedTerminal"
+        }
+    ]
+}
