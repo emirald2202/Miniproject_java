@@ -1,0 +1,30 @@
+flowchart TD
+    START(["Citizen Files Complaint"]) --> DUP{Duplicate within 24h?}
+    DUP -->|Yes| ERR1["DuplicateComplaintException\nComplaint rejected"]
+    DUP -->|No| FILED["Status: FILED\nSaved in ComplaintBox"]
+
+    FILED --> PRIORITY["PriorityCalculator\ncalculates score"]
+    PRIORITY --> SCORE{Priority Score?}
+
+    SCORE -->|"> 20 — Auto"| AUTO_ESC["EscalationThread\nautoEscalate()"]
+    AUTO_ESC --> ESCALATED_ST["Status: ESCALATED\nNotification -> Citizen + Admins"]
+
+    SCORE -->|"<= 20"| OFFICER_ACT{Officer Action?}
+    OFFICER_ACT -->|"Review"| UNDER_REVIEW["Status: UNDER_REVIEW\nOfficer assigned by Admin"]
+
+    UNDER_REVIEW --> OFFICER_DEC{Officer Decision?}
+    OFFICER_DEC -->|"Resolve"| RESOLVED["Status: RESOLVED\nNotification -> Citizen + Admins"]
+    OFFICER_DEC -->|"Escalate"| ESCALATED_ST
+    OFFICER_DEC -->|"Reject"| REJECTED["Status: REJECTED\nNotification -> Citizen + Admins"]
+
+    ESCALATED_ST --> OFFICER_DEC2{Higher Auth Action?}
+    OFFICER_DEC2 -->|"Resolve"| RESOLVED
+    OFFICER_DEC2 -->|"Return to Review"| UNDER_REVIEW
+
+    RESOLVED --> ARCHIVE{"> 30 days old?"}
+    ARCHIVE -->|Yes| LOCKED["Archived — ComplaintExpiredException on update"]
+    ARCHIVE -->|No| REMOVABLE["Can still be modified"]
+
+    RESOLVED --> END_R(["Closed"])
+    REJECTED --> END_J(["Closed"])
+    LOCKED --> END_L(["Archived"])

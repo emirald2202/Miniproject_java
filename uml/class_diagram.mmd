@@ -1,0 +1,208 @@
+classDiagram
+    %% ─── ENUMS ───────────────────────────────────────────────────────────────
+    class Role {
+        <<enumeration>>
+        CITIZEN
+        OFFICER
+        ADMIN
+    }
+
+    class Status {
+        <<enumeration>>
+        FILED
+        UNDER_REVIEW
+        ESCALATED
+        RESOLVED
+        REJECTED
+    }
+
+    class OfficerDepartment {
+        <<enumeration>>
+        ACB
+        MSEB
+        PWD
+        LOCAL_POLICE
+        MUNICIPAL_CORPORATION
+        TRAFFIC_POLICE
+    }
+
+    class ComplaintCategory {
+        <<enumeration>>
+        INFRASTRUCTURE
+        CORRUPTION
+        NOISE
+        TRAFFIC
+        SANITATION
+        WATER_SUPPLY
+        ELECTRICITY
+    }
+
+    %% ─── USER HIERARCHY ──────────────────────────────────────────────────────
+    class BaseUser {
+        <<abstract>>
+        +int userId
+        +String username
+        +String password
+        +Role role
+        +login(String, String) boolean
+        +performAction()* void
+    }
+
+    class Citizen {
+        -CitizenProfile profile
+        +performAction() void
+        +fileComplaint(T, ComplaintBox~T~) void
+        +viewProfile(Admin) String
+        +getProfile() CitizenProfile
+    }
+
+    class Officer {
+        +int assignedComplaints
+        +OfficerDepartment department
+        +performAction() void
+        +resolveComplaint(BaseComplaint) void
+    }
+
+    class Admin {
+        +int adminLevel
+        +performAction() void
+    }
+
+    BaseUser <|-- Citizen
+    BaseUser <|-- Officer
+    BaseUser <|-- Admin
+    Citizen --> CitizenProfile : has-a
+    Officer --> OfficerDepartment : uses
+    BaseUser --> Role : uses
+
+    %% ─── PROFILE ─────────────────────────────────────────────────────────────
+    class CitizenProfile {
+        -String aadhaarNumber
+        -String phoneNumber
+        -String homeAddress
+        -String fullName
+        +getVerifiedData(Admin) String
+    }
+
+    CitizenProfile ..> Admin : depends on
+
+    %% ─── COMPLAINT HIERARCHY ─────────────────────────────────────────────────
+    class BaseComplaint {
+        <<abstract>>
+        +int complaintId
+        +String title
+        +String description
+        +Status status
+        +int filedByUserId
+        +int areaCode
+        +int urgencyLevel
+        +LocalDateTime filedDate
+        +int assignedToOfficerId
+        +int priorityScore
+        +calculatePriorityScore()* int
+        +updateStatus(Status) void
+        +autoEscalate() void
+        +assignOfficer(int, int) void
+    }
+
+    class InfrastructureComplaint { +calculatePriorityScore() int }
+    class CorruptionComplaint     { +calculatePriorityScore() int }
+    class NoiseComplaint          { +calculatePriorityScore() int }
+    class TrafficComplaint        { +calculatePriorityScore() int }
+    class SanitationComplaint     { +calculatePriorityScore() int }
+    class WaterSupplyComplaint    { +calculatePriorityScore() int }
+    class ElectricityComplaint    { +calculatePriorityScore() int }
+
+    BaseComplaint <|-- InfrastructureComplaint
+    BaseComplaint <|-- CorruptionComplaint
+    BaseComplaint <|-- NoiseComplaint
+    BaseComplaint <|-- TrafficComplaint
+    BaseComplaint <|-- SanitationComplaint
+    BaseComplaint <|-- WaterSupplyComplaint
+    BaseComplaint <|-- ElectricityComplaint
+    BaseComplaint --> Status : uses
+
+    %% ─── GENERIC CONTAINER ───────────────────────────────────────────────────
+    class ComplaintBox~T~ {
+        -List~T~ complaints
+        +addComplaint(T) void
+        +getComplaintById(int) T
+        +getAllComplaints() List~T~
+        +remove(int) void
+        +size() int
+    }
+
+    ComplaintBox --> BaseComplaint : T extends
+
+    %% ─── DATA STORE (SINGLETON) ──────────────────────────────────────────────
+    class DataStore {
+        -static DataStore instance
+        +List~Citizen~ citizens
+        +List~Officer~ officers
+        +List~Admin~ admins
+        +ComplaintBox~InfrastructureComplaint~ infraBox
+        +ComplaintBox~CorruptionComplaint~ corruptionBox
+        +ComplaintBox~NoiseComplaint~ noiseBox
+        +ComplaintBox~TrafficComplaint~ trafficBox
+        +ComplaintBox~SanitationComplaint~ sanitationBox
+        +ComplaintBox~WaterSupplyComplaint~ waterSupplyBox
+        +ComplaintBox~ElectricityComplaint~ electricityBox
+        +ConcurrentLinkedQueue~String~ notificationQueue
+        +HashMap~Integer,List~String~~ userNotifications
+        +NotificationThread notificationThread
+        +getInstance()$ DataStore
+    }
+
+    DataStore --> ComplaintBox : contains 7 typed
+    DataStore --> Citizen : stores
+    DataStore --> Officer : stores
+    DataStore --> Admin : stores
+    DataStore --> NotificationThread : holds ref
+
+    %% ─── THREADS ─────────────────────────────────────────────────────────────
+    class NotificationThread {
+        -volatile boolean running
+        -HashMap~Integer,Runnable~ activeCallbacks
+        +registerCallback(int, Runnable) void
+        +deregisterCallback(int) void
+        +run() void
+        +stopThread() void
+    }
+
+    class EscalationThread {
+        -volatile boolean running
+        -int ESCALATION_THRESHOLD
+        +run() void
+        +stopThread() void
+    }
+
+    class SessionTimeoutThread {
+        -volatile boolean running
+        -int timeoutSeconds
+        +resetTimer() void
+        +run() void
+        +stopThread() void
+    }
+
+    NotificationThread --|> Thread
+    EscalationThread --|> Thread
+    SessionTimeoutThread --|> Thread
+    EscalationThread --> DataStore : reads from
+    NotificationThread --> DataStore : reads/writes
+
+    %% ─── UTILITY CLASSES ─────────────────────────────────────────────────────
+    class PriorityCalculator {
+        +calculateScore(int,int,int)$ int
+        +autoAssignStatus(int)$ Status
+        +obfuscateLog(String)$ String
+        +decodeLog(String)$ String
+    }
+
+    class ComplaintSearch {
+        +search(int) List~BaseComplaint~
+        +search(String) List~BaseComplaint~
+        +search(ComplaintCategory) List~BaseComplaint~
+    }
+
+    ComplaintSearch --> DataStore : uses
+    PriorityCalculator --> Status : uses

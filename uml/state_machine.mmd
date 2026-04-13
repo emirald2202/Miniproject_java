@@ -1,0 +1,25 @@
+stateDiagram-v2
+    [*] --> FILED : Citizen files complaint
+
+    FILED --> UNDER_REVIEW : Officer reviews
+    FILED --> REJECTED : Officer rejects at filing
+
+    UNDER_REVIEW --> RESOLVED : Officer resolves
+    UNDER_REVIEW --> ESCALATED : Officer escalates / EscalationThread auto-escalates
+    UNDER_REVIEW --> REJECTED : Officer rejects
+
+    ESCALATED --> UNDER_REVIEW : Higher authority de-escalates
+    ESCALATED --> RESOLVED : Higher authority resolves
+
+    RESOLVED --> [*] : Terminal state — locked after 30 days
+    REJECTED --> [*] : Terminal state
+
+    note right of RESOLVED
+        ComplaintExpiredException thrown
+        if modification attempted
+    end note
+
+    note right of REJECTED
+        ComplaintExpiredException thrown
+        if modification attempted
+    end note

@@ -1,0 +1,46 @@
+graph LR
+    subgraph JavaFX_UI["JavaFX GUI Layer"]
+        UI_Login["LoginScreen"]
+        UI_Citizen["CitizenDashboard"]
+        UI_Officer["OfficerDashboard"]
+        UI_Admin["AdminDashboard"]
+    end
+
+    subgraph Backend["Backend Layer"]
+        DS["DataStore\n(Singleton)"]
+        PQ["notificationQueue\n(ConcurrentLinkedQueue)"]
+        UN["userNotifications\n(HashMap)"]
+    end
+
+    subgraph Threads["Background Threads"]
+        NT["NotificationThread"]
+        ET["EscalationThread"]
+        ST["SessionTimeoutThread"]
+    end
+
+    subgraph Logic["Business Logic"]
+        CB["ComplaintBox~T~\n(Generic Container)"]
+        CS["ComplaintSearch\n(Overloaded)"]
+        PC["PriorityCalculator\n(Static Utility)"]
+    end
+
+    UI_Login --> DS
+    UI_Citizen --> DS
+    UI_Officer --> DS
+    UI_Admin --> DS
+
+    UI_Citizen -->|"registers callback"| NT
+    UI_Officer -->|"registers callback"| NT
+    UI_Admin -->|"registers callback"| NT
+
+    DS --> PQ
+    DS --> UN
+    NT -->|"polls"| PQ
+    NT -->|"writes"| UN
+    ET -->|"reads all boxes"| DS
+    ET -->|"pushes to"| PQ
+    ST -->|"monitors session"| DS
+
+    DS --> CB
+    CB --> PC
+    CS --> DS
