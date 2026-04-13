@@ -1,7 +1,3 @@
-// OOP CONCEPT : Inheritance & Polymorphism
-// ASSIGNMENT  : 4
-// PURPOSE     : Concrete Admin subclass demonstrating method overriding.
-
 package users;
 
 import enums.Role;

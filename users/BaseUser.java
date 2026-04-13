@@ -1,7 +1,3 @@
-// OOP CONCEPT : Inheritance & Polymorphism
-// ASSIGNMENT  : 4
-// PURPOSE     : Abstract parent class representing a common user interface and properties.
-
 package users;
 
 import enums.Role;
@@ -19,7 +15,6 @@ public abstract class BaseUser {
         this.role = role;
     }
 
-    // Validates if provided credentials match user's values
     public boolean login(String u, String p) {
         return this.username.equals(u) && this.password.equals(p);
     }

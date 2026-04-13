@@ -1,7 +1,3 @@
-// OOP CONCEPT : Inheritance & Polymorphism
-// ASSIGNMENT  : 4
-// PURPOSE     : Abstract parent class for common complaint properties and methods.
-
 package complaints;
 
 import enums.Status;
@@ -19,11 +15,11 @@ public abstract class BaseComplaint {
     public int areaCode;
     public int urgencyLevel;
     public LocalDateTime filedDate;
-    
+
     public int assignedToOfficerId;
     public int priorityScore;
 
-    public BaseComplaint(int complaintId, String title, String description, 
+    public BaseComplaint(int complaintId, String title, String description,
                          int filedByUserId, int areaCode, int urgencyLevel, LocalDateTime filedDate) {
         this.complaintId = complaintId;
         this.title = title;
@@ -39,26 +35,23 @@ public abstract class BaseComplaint {
 
     public abstract int calculatePriorityScore();
 
-    // Updates the current status of the complaint with workflow validation
-    public void updateStatus(Status newStatus) 
+    public void updateStatus(Status newStatus)
             throws InvalidStatusTransitionException, ComplaintExpiredException {
-        
+
         try {
-            // Check if the complaint is already resolved or rejected (expired/archived)
             if (this.status == Status.RESOLVED || this.status == Status.REJECTED) {
                 throw new ComplaintExpiredException(
-                    "Complaint #" + complaintId + " is already " + this.status 
+                    "Complaint #" + complaintId + " is already " + this.status
                     + " and cannot be modified.");
             }
 
-            // Validate status transition workflow
             boolean validTransition = false;
             switch (this.status) {
                 case FILED:
                     validTransition = (newStatus == Status.UNDER_REVIEW || newStatus == Status.REJECTED);
                     break;
                 case UNDER_REVIEW:
-                    validTransition = (newStatus == Status.RESOLVED || newStatus == Status.ESCALATED 
+                    validTransition = (newStatus == Status.RESOLVED || newStatus == Status.ESCALATED
                                        || newStatus == Status.REJECTED);
                     break;
                 case ESCALATED:
@@ -70,7 +63,7 @@ public abstract class BaseComplaint {
 
             if (!validTransition) {
                 throw new InvalidStatusTransitionException(
-                    "Cannot transition complaint #" + complaintId 
+                    "Cannot transition complaint #" + complaintId
                     + " from " + this.status + " to " + newStatus + ".");
             }
 
@@ -78,24 +71,21 @@ public abstract class BaseComplaint {
 
         } catch (ComplaintExpiredException | InvalidStatusTransitionException e) {
             System.err.println("[STATUS UPDATE ERROR] " + e.getMessage());
-            throw e; // Re-throw so the caller can also handle it
+            throw e;
         }
     }
 
-    // Bypasses the state machine — used ONLY by EscalationThread for administrative auto-escalation
     public void autoEscalate() {
         this.status = Status.ESCALATED;
     }
 
-    // Assigns an officer to this complaint with validation
-    public void assignOfficer(int officerId, int requestingOfficerId) 
+    public void assignOfficer(int officerId, int requestingOfficerId)
             throws OfficerNotAssignedException {
-        
+
         try {
-            // If already assigned, only the currently assigned officer can reassign
             if (this.assignedToOfficerId != -1 && this.assignedToOfficerId != requestingOfficerId) {
                 throw new OfficerNotAssignedException(
-                    "Officer #" + requestingOfficerId + " is not assigned to complaint #" 
+                    "Officer #" + requestingOfficerId + " is not assigned to complaint #"
                     + complaintId + ". Only officer #" + this.assignedToOfficerId + " can modify it.");
             }
 

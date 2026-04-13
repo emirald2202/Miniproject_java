@@ -1,7 +1,3 @@
-// OOP CONCEPT : Inheritance & Polymorphism
-// ASSIGNMENT  : 4
-// PURPOSE     : Concrete Citizen subclass demonstrating method overriding.
-
 package users;
 
 import enums.Role;
@@ -23,13 +19,11 @@ public class Citizen extends BaseUser {
     public void performAction() {
         System.out.println("Filing a new complaint");
     }
-    
-    // Extractor for demonstration purposes inside main
+
     public CitizenProfile getProfile() {
         return this.profile;
     }
 
-    // Files a complaint into the given box with duplicate-check exception handling
     public <T extends BaseComplaint> void fileComplaint(T complaint, ComplaintBox<T> box) {
         try {
             box.addComplaint(complaint);
@@ -39,7 +33,6 @@ public class Citizen extends BaseUser {
         }
     }
 
-    // Safely accesses profile data — handles unauthorized access
     public String viewProfile(Admin admin) {
         try {
             return this.profile.getVerifiedData(admin);
@@ -49,4 +42,3 @@ public class Citizen extends BaseUser {
         }
     }
 }
-
